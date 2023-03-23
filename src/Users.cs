@@ -5,6 +5,58 @@ record User(int userid, string email, string username, string firstName, string 
 class Users
 {
     public static User? LoggedInUser { get; private set; } = null;
+    public static void HandleInput(NpgsqlConnection database)
+    {
+        Console.WriteLine("User input possibilities: create account, login");
+        string? input = Console.ReadLine();
+        if (input != null)
+        {
+            switch (input.ToLower())
+            {
+                case "create account":
+                    CreateAccountPrompt(database);
+                    break;
+                case "login":
+                    LoginPrompt(database);
+                    break;
+                default:
+                    Console.WriteLine("Not an input");
+                    HandleInput(database);
+                    break;
+            }
+        }
+        else
+        {
+            Console.WriteLine("null input, please retry");
+            HandleInput(database);
+        }
+    }
+    private static bool CreateAccountPrompt(NpgsqlConnection database)
+    {
+        Console.WriteLine("Enter your email");
+        var email = Console.ReadLine();
+        Console.WriteLine("Enter your username");
+        var username = Console.ReadLine();
+        Console.WriteLine("Enter your first name");
+        var firstName = Console.ReadLine();
+        Console.WriteLine("Enter your last name");
+        var lastName = Console.ReadLine();
+        Console.WriteLine("Enter the year you were born");
+        var dob_year = int.Parse(Console.ReadLine());
+        Console.WriteLine("Enter the month you were born");
+        var dob_month = int.Parse(Console.ReadLine());
+        Console.WriteLine("Enter the day you were born");
+        var dob_day = int.Parse(Console.ReadLine());
+        Console.WriteLine("Enter a password");
+        var password = Console.ReadLine();
+        DateOnly dob = new DateOnly(dob_year, dob_month, dob_day);
+        // ignoring these warnings for velocity sake
+        return CreateUser(database, email, username, firstName, lastName, dob, password);
+    }
+    private static bool LoginPrompt(NpgsqlConnection database)
+    {
+        return false;
+    }
     private static User readerToUser(NpgsqlDataReader reader)
     {
         return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
@@ -86,6 +138,7 @@ class Users
             // Checking for long enough first and last names
             if (reader.Rows == 0 && firstName.Length > 0 && lastName.Length > 0)
             {
+                reader.Close();
                 // Checking for long enough password
                 // Hash password here
                 using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
@@ -107,11 +160,13 @@ class Users
 
                 if (inserted >= 0)
                 {
+                    reader.Close();
                     return true;
                 }
             }
+
+            reader.Close();
         }
         return false;
     }
-
 }
