@@ -1,30 +1,31 @@
 using Npgsql;
 
-struct User
-{
-    public User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string pass)
-    {
-        this.userid = userid;
-        this.email = email;
-        this.username = username;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.dob = dob;
-        this.creationDate = creationDate;
-        this.lastAccessed = lastAccessed;
-        this.password = pass;
-    }
-    public int userid;
-    public string email;
-    public string username;
-    public string firstName;
-    public string lastName;
-    public string password;
-    public DateTime dob;
-    public DateTime creationDate;
-    public DateTime lastAccessed;
-}
+// record User
+// {
+//     // public User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string pass)
+//     // {
+//     //     this.userid = userid;
+//     //     this.email = email;
+//     //     this.username = username;
+//     //     this.firstName = firstName;
+//     //     this.lastName = lastName;
+//     //     this.dob = dob;
+//     //     this.creationDate = creationDate;
+//     //     this.lastAccessed = lastAccessed;
+//     //     this.password = pass;
+//     // }
+//     public int userid { get; init; }
+//     public string email { get; init; }
+//     public string username;
+//     public string firstName;
+//     public string lastName;
+//     public string password;
+//     public DateTime dob;
+//     public DateTime creationDate;
+//     public DateTime lastAccessed;
+// }
 
+record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
 
 class Users
 {
