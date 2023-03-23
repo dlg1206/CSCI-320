@@ -5,7 +5,7 @@ Application Requirements
 
 - [X] Users will be able to create collections of music.
 
-- [ ] Users will be able to see the list of all their collections by name in ascending order. The list must show the following information per collection: Collection’s name, Number of songs in the collection, Total duration in minutes
+- [X] Users will be able to see the list of all their collections by name in ascending order. The list must show the following information per collection: Collection’s name, Number of songs in the collection, Total duration in minutes
 
 - [ ] will be able to search for songs by name, artist, album, and genre. The resulting list of songs must show the song’s name, the artist’s name, the album, the length and the listen count. The list must be sorted alphabetically (ascending) by song’s name and artist’s name.
 

@@ -9,6 +9,72 @@ class Playlists
         return new Playlist((int)reader["playlistid"], (int)reader["userid"], (DateTime)reader["creationdate"], (string)reader["playlistname"]);
     }
 
+    public static void HandleInput(NpgsqlConnection database)
+    {
+        Console.WriteLine("Playlist input possibilities: create playlist, list playlists, modify playlist, delete playlist");
+        string? input = Console.ReadLine();
+        if (input != null)
+        {
+            switch (input)
+            {
+                case "create playlist":
+                    Playlists.MakePlaylist(database);
+                    break;
+                case "list playlists":
+                    // this is guaranteed to not be null
+                    Playlists.DisplayPlaylists(database, Users.LoggedInUser!.userid);
+                    break;
+                case "modify playlist":
+                    Playlists.ModifyPlaylist(database);
+                    break;
+                case "delete playlist":
+                    Playlists.DeletePlaylist(database);
+                    break;
+                default:
+                    Console.WriteLine("Not an input");
+                    HandleInput(database);
+                    break;
+            }
+        }
+        else
+        {
+            Console.WriteLine("input is null, try again");
+            HandleInput(database);
+        }
+    }
+
+    private static void DeletePlaylist(NpgsqlConnection database)
+    {
+        Console.WriteLine("Enter the playlist to delete");
+        var playlistName = Console.ReadLine();
+
+        List<Playlist> playlists = GetPlaylistsForUser(database, Users.LoggedInUser!.userid);
+        var playlistId = playlists.Find(x => x.playlistname == playlistName)?.playlistid;
+
+        if (playlistId != null)
+        {
+            var deleteSongPlaylistReference = new NpgsqlCommand($"DELETE FROM songplaylist WHERE playlistid = {playlistId}", database);
+            deleteSongPlaylistReference.Prepare();
+            deleteSongPlaylistReference.ExecuteNonQuery();
+        }
+
+        var delete = new NpgsqlCommand($"DELETE FROM playlist WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}", database);
+        delete.Prepare();
+        delete.ExecuteNonQuery();
+    }
+
+    private static void ModifyPlaylist(NpgsqlConnection database)
+    {
+        Console.WriteLine("Enter the playlist to modify");
+        var playlistName = Console.ReadLine();
+        Console.WriteLine("Enter the new playlist name");
+        var newPlaylistName = Console.ReadLine();
+
+        var update = new NpgsqlCommand($"UPDATE playlist SET playlistname = '{newPlaylistName}' WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}", database);
+        update.Prepare();
+        update.ExecuteNonQuery();
+    }
+
     public static void DisplayPlaylists(NpgsqlConnection database, int userid)
     {
         List<Playlist> playlists = GetPlaylistsForUser(database, userid);
