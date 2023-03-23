@@ -33,8 +33,10 @@ class Users
         return users;
     }
 
-    public static void AddFriend(NpgsqlConnection database, User friend) {
-        if (LoggedInUser != null) {
+    public static void AddFriend(NpgsqlConnection database, User friend)
+    {
+        if (LoggedInUser != null)
+        {
             using var insert = new NpgsqlCommand($"INSERT friend(userid1, userid2) VALUES({LoggedInUser?.userid}, {friend.userid})", database);
             insert.Prepare();
             insert.ExecuteNonQuery();
@@ -75,21 +77,20 @@ class Users
 
         // Checking inputs for validity
         // Checking for valid email
-        if (email.Length > 0 && Util.IsValid(email)) {
+        if (email.Length > 0 && Util.IsValid(email) && username.Length > 0 && password.Length > 0)
+        {
             // Checking for unique username
-            if (username.Length > 0) { 
-                var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
-                var reader = cmd.ExecuteReader();
-                
-                if (reader.Rows == 0) {
-                    // Checking for long enough first and last names
-                    if (firstName.Length > 0 && lastName.Length > 0) {
-                        // Checking for long enough password
-                        if (password.Length > 0) {
-                            // Hash password here
-                            using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
-                            {
-                                Parameters =
+            var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
+            var reader = cmd.ExecuteReader();
+
+            // Checking for long enough first and last names
+            if (reader.Rows == 0 && firstName.Length > 0 && lastName.Length > 0)
+            {
+                // Checking for long enough password
+                // Hash password here
+                using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
+                {
+                    Parameters =
                                 {
                                     new() { Value = email },
                                     new() { Value = username },
@@ -100,35 +101,17 @@ class Users
                                     new() { Value = DateTime.Now }, // last accessed date is right now
                                     new() { Value = password }
                                 }
-                            };
-                            insert.Prepare();
-                            var inserted = insert.ExecuteNonQuery();
+                };
+                insert.Prepare();
+                var inserted = insert.ExecuteNonQuery();
 
-                            if (inserted >= 0) {
-                                return true;
-                            }
-                            else {
-                                return false;
-                            }
-                        }
-                        else {
-                            return false;
-                        }
-                    }
-                    else {
-                        return false;
-                    }
-                }
-                else {
-                    return false;
+                if (inserted >= 0)
+                {
+                    return true;
                 }
             }
-            else {
-                return false;
-            }
-        }   
-        else {
-            return false;
         }
+        return false;
     }
+
 }
