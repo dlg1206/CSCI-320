@@ -8,7 +8,7 @@ class Users
 
     public static void HandleInput(NpgsqlConnection database)
     {
-        Console.WriteLine("User input possibilities: create account, create playlist, login");
+        Console.WriteLine("User input possibilities: create account, friends, follow, unfollow, playlists, login");
         string? input = Console.ReadLine();
         if (input != null)
         {
@@ -20,15 +20,24 @@ class Users
                 case "login":
                     LoginPrompt(database);
                     break;
-                case "create playlist":
+                case "playlists":
                     if (LoggedInUser != null)
                     {
-                        Playlists.MakePlaylist(database);
+                        Playlists.HandleInput(database);
                     }
                     else
                     {
                         Console.WriteLine("You are not logged in");
                     }
+                    break;
+                case "friends":
+                    ListFriends(database);
+                    break;
+                case "follow":
+                    HandleFriend(database, true);
+                    break;
+                case "unfollow":
+                    HandleFriend(database, false);
                     break;
                 default:
                     Console.WriteLine("Not an input");
@@ -118,19 +127,78 @@ class Users
         return users;
     }
 
-    public static void AddFriend(NpgsqlConnection database, User friend)
+    private static void ListFriends(NpgsqlConnection database)
+    {
+        Console.WriteLine("Not needed in this implementation");
+    }
+
+    private static void HandleFriend(NpgsqlConnection database, bool follow)
+    {
+        Console.WriteLine("Enter your friends email");
+        var email = Console.ReadLine();
+        // technically we could consolidate this down into one query, but having the utility method isn't bad
+        User? friend = GetUserFromEmail(database, email);
+
+        if (friend == null)
+        {
+            Console.WriteLine("No user exists with that email");
+            return;
+        }
+
+        if (follow)
+        {
+            AddFriend(database, friend);
+        }
+        else
+        {
+            RemoveFriend(database, friend);
+        }
+    }
+
+    private static void AddFriend(NpgsqlConnection database, User friend)
     {
         if (LoggedInUser != null)
         {
-            using var insert = new NpgsqlCommand($"INSERT friend(userid1, userid2) VALUES({LoggedInUser?.userid}, {friend.userid})", database);
+            var insert = new NpgsqlCommand($"INSERT INTO friend(userid1, userid2) VALUES({LoggedInUser?.userid}, {friend.userid})", database);
             insert.Prepare();
             insert.ExecuteNonQuery();
         }
     }
 
+    private static void RemoveFriend(NpgsqlConnection database, User friend)
+    {
+        if (LoggedInUser != null)
+        {
+            var delete = new NpgsqlCommand($"DELETE FROM friend WHERE (userid1 = {friend.userid} AND userid2 = {LoggedInUser.userid}) OR (userid1 = {LoggedInUser.userid} AND userid2 = {friend.userid})", database);
+            delete.Prepare();
+            delete.ExecuteNonQuery();
+        }
+    }
+
+    private static User? GetUserFromEmail(NpgsqlConnection database, string email)
+    {
+        if (!Util.IsValid(email))
+        {
+            Console.WriteLine("Invalid email format");
+            return null;
+        }
+
+        var query = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE email LIKE '{email}'", database);
+        var reader = query.ExecuteReader();
+        if (reader.Read())
+        {
+            User user = readerToUser(reader);
+            reader.Close();
+            return user;
+        }
+
+        reader.Close();
+        return null;
+    }
+
     public static bool LogIn(NpgsqlConnection database, string username, string password)
     {
-        var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username='{username}'", database);
+        var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
         var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
