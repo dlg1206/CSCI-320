@@ -13,11 +13,11 @@ Application Requirements
 
 - [ ] can add and delete albums, and songs from their collection
 
-- [ ] can modify the name of a collection. They can also delete an entire collection
+- [X] can modify the name of a collection. They can also delete an entire collection
 
 - [ ] can listen to a song individually or it can play an entire collection. You must record every time a song is played by a user. You do not need to actually be able to play songs, simply mark them as played
 
 - [ ] can follow a friend. Users can search for new friends by email
 
-- [ ] application must also allow an user to unfollow a friend
+- [ ] application must also allow an user to un-follow a friend
 
