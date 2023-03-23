@@ -33,7 +33,9 @@ public class DBTest
                     Console.WriteLine("Connected to DB");
                     // Users.GetUsers(conn);
                     Console.WriteLine(Users.LogIn(conn, "tommy", "pass"));
-                    Console.WriteLine(Users.LogIn(conn, "test", "pass"));
+                    // Console.WriteLine(Users.LogIn(conn, "test", "pass"));
+                    var users = Users.GetUsers(conn);
+                    Console.WriteLine(users[1].lastAccessed);
                 }
             }
             finally

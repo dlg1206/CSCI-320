@@ -68,12 +68,22 @@ class Users
             {
                 LoggedInUser = readerToUser(reader);
                 reader.Close();
+
+                using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)
+                {
+                    Parameters = {
+                        new() { Value = DateTime.Now },
+                    }
+                };
+                insert.Prepare();
+                insert.ExecuteNonQuery();
+
                 return true;
             }
         }
 
-
         reader.Close();
+
         return false;
     }
 
