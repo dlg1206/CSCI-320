@@ -1,34 +1,10 @@
 using Npgsql;
 
-struct User
-{
-    public User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string pass)
-    {
-        this.userid = userid;
-        this.email = email;
-        this.username = username;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.dob = dob;
-        this.creationDate = creationDate;
-        this.lastAccessed = lastAccessed;
-        this.password = pass;
-    }
-    public int userid;
-    public string email;
-    public string username;
-    public string firstName;
-    public string lastName;
-    public string password;
-    public DateTime dob;
-    public DateTime creationDate;
-    public DateTime lastAccessed;
-}
-
+record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
 
 class Users
 {
-    public static User LoggedInUser { get; private set; }
+    public static User? LoggedInUser { get; private set; } = null;
     private static User readerToUser(NpgsqlDataReader reader)
     {
         return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
@@ -57,6 +33,14 @@ class Users
         return users;
     }
 
+    public static void AddFriend(NpgsqlConnection database, User friend) {
+        if (LoggedInUser != null) {
+            using var insert = new NpgsqlCommand($"INSERT friend(userid1, userid2) VALUES({LoggedInUser?.userid}, {friend.userid})", database);
+            insert.Prepare();
+            insert.ExecuteNonQuery();
+        }
+    }
+
     public static bool LogIn(NpgsqlConnection database, string username, string password)
     {
         var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username='{username}'", database);
@@ -67,12 +51,22 @@ class Users
             {
                 LoggedInUser = readerToUser(reader);
                 reader.Close();
+
+                using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)
+                {
+                    Parameters = {
+                        new() { Value = DateTime.Now },
+                    }
+                };
+                insert.Prepare();
+                insert.ExecuteNonQuery();
+
                 return true;
             }
         }
 
-
         reader.Close();
+
         return false;
     }
 
