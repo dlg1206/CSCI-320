@@ -31,7 +31,7 @@ class Users
             HandleInput(database);
         }
     }
-    private static bool CreateAccountPrompt(NpgsqlConnection database)
+    private static void CreateAccountPrompt(NpgsqlConnection database)
     {
         Console.WriteLine("Enter your email");
         var email = Console.ReadLine();
@@ -51,11 +51,29 @@ class Users
         var password = Console.ReadLine();
         DateOnly dob = new DateOnly(dob_year, dob_month, dob_day);
         // ignoring these warnings for velocity sake
-        return CreateUser(database, email, username, firstName, lastName, dob, password);
+        if (CreateUser(database, email, username, firstName, lastName, dob, password))
+        {
+            Console.WriteLine($"Successfully created new user {username}");
+        }
+        else
+        {
+            Console.WriteLine($"Failed to create user {username}");
+        }
     }
-    private static bool LoginPrompt(NpgsqlConnection database)
+    private static void LoginPrompt(NpgsqlConnection database)
     {
-        return false;
+        Console.WriteLine("Enter your username");
+        var username = Console.ReadLine();
+        Console.WriteLine("Enter your password");
+        var password = Console.ReadLine();
+        if (LogIn(database, username, password))
+        {
+            Console.WriteLine($"Logged in as {username}");
+        }
+        else
+        {
+            Console.WriteLine($"Failed to log in as {username}");
+        }
     }
     private static User readerToUser(NpgsqlDataReader reader)
     {

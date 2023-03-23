@@ -13,6 +13,7 @@ class Input
             {
                 case "user":
                     Users.HandleInput(database);
+                    HandleInput(database);
                     break;
                 default:
                     Console.WriteLine("Not a valid input");
