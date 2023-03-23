@@ -28,7 +28,7 @@ struct User
 
 class Users
 {
-    public static User LoggedInUser { get; private set; }
+    public static User? LoggedInUser { get; private set; } = null;
 
     private static User readerToUser(NpgsqlDataReader reader)
     {
@@ -56,6 +56,14 @@ class Users
 
         reader.Close();
         return users;
+    }
+
+    public static void AddFriend(NpgsqlConnection database, User friend) {
+        if (LoggedInUser != null) {
+            using var insert = new NpgsqlCommand($"INSERT friend(userid1, userid2) VALUES({LoggedInUser?.userid}, {friend.userid})", database);
+            insert.Prepare();
+            insert.ExecuteNonQuery();
+        }
     }
 
     public static bool LogIn(NpgsqlConnection database, string username, string password)
