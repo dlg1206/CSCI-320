@@ -17,7 +17,7 @@ Application Requirements
 
 - [ ] can listen to a song individually or it can play an entire collection. You must record every time a song is played by a user. You do not need to actually be able to play songs, simply mark them as played
 
-- [ ] can follow a friend. Users can search for new friends by email
+- [X] can follow a friend. Users can search for new friends by email
 
-- [ ] application must also allow an user to un-follow a friend
+- [X] application must also allow an user to un-follow a friend
 

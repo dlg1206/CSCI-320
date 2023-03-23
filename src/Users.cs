@@ -8,7 +8,7 @@ class Users
 
     public static void HandleInput(NpgsqlConnection database)
     {
-        Console.WriteLine("User input possibilities: create account, follow, unfollow, playlists, login");
+        Console.WriteLine("User input possibilities: create account, friends, follow, unfollow, playlists, login");
         string? input = Console.ReadLine();
         if (input != null)
         {
@@ -29,6 +29,9 @@ class Users
                     {
                         Console.WriteLine("You are not logged in");
                     }
+                    break;
+                case "friends":
+                    ListFriends(database);
                     break;
                 case "follow":
                     HandleFriend(database, true);
@@ -122,6 +125,11 @@ class Users
 
         reader.Close();
         return users;
+    }
+
+    private static void ListFriends(NpgsqlConnection database)
+    {
+        Console.WriteLine("Not needed in this implementation");
     }
 
     private static void HandleFriend(NpgsqlConnection database, bool follow)
