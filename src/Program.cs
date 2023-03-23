@@ -32,10 +32,9 @@ public class DBTest
                     conn.Open();
                     Console.WriteLine("Connected to DB");
                     // Users.GetUsers(conn);
-                    Console.WriteLine(Users.LogIn(conn, "tommy", "pass"));
+                    // Console.WriteLine(Users.LogIn(conn, "tommy", "pass"));
                     // Console.WriteLine(Users.LogIn(conn, "test", "pass"));
-                    var users = Users.GetUsers(conn);
-                    Console.WriteLine(users[1].lastAccessed);
+                    Console.WriteLine(Users.CreateUser(conn, "test@email.com", "testUser", "firstname", "lastname", new DateOnly(2022, 04, 20), "password1"));
                 }
             }
             finally

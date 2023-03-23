@@ -5,7 +5,6 @@ record User(int userid, string email, string username, string firstName, string 
 class Users
 {
     public static User? LoggedInUser { get; private set; } = null;
-
     private static User readerToUser(NpgsqlDataReader reader)
     {
         return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
@@ -71,23 +70,65 @@ class Users
         return false;
     }
 
-    public static void CreateUser(NpgsqlConnection database, string email, string username, string firstName, string lastName, DateOnly dob, string password)
+    public static bool CreateUser(NpgsqlConnection database, string email, string username, string firstName, string lastName, DateOnly dob, string password)
     {
-        using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
-        {
-            Parameters =
-            {
-                new() { Value = email },
-                new() { Value = username },
-                new() { Value = firstName },
-                new() { Value = lastName },
-                new() { Value = dob },
-                new() { Value = DateTime.Now }, // creation date is right now
-                new() { Value = DateTime.Now }, // last accessed date is right now
-                new() { Value = password }
+
+        // Checking inputs for validity
+        // Checking for valid email
+        if (email.Length > 0 && Util.IsValid(email)) {
+            // Checking for unique username
+            if (username.Length > 0) { 
+                var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
+                var reader = cmd.ExecuteReader();
+                
+                if (reader.Rows == 0) {
+                    // Checking for long enough first and last names
+                    if (firstName.Length > 0 && lastName.Length > 0) {
+                        // Checking for long enough password
+                        if (password.Length > 0) {
+                            // Hash password here
+                            using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
+                            {
+                                Parameters =
+                                {
+                                    new() { Value = email },
+                                    new() { Value = username },
+                                    new() { Value = firstName },
+                                    new() { Value = lastName },
+                                    new() { Value = dob },
+                                    new() { Value = DateTime.Now }, // creation date is right now
+                                    new() { Value = DateTime.Now }, // last accessed date is right now
+                                    new() { Value = password }
+                                }
+                            };
+                            insert.Prepare();
+                            var inserted = insert.ExecuteNonQuery();
+
+                            if (inserted >= 0) {
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                else {
+                    return false;
+                }
             }
-        };
-        insert.Prepare();
-        insert.ExecuteNonQuery();
+            else {
+                return false;
+            }
+        }   
+        else {
+            return false;
+        }
     }
 }
