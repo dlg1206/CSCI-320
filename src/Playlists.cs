@@ -11,23 +11,23 @@ class Playlists
 
     public static void HandleInput(NpgsqlConnection database)
     {
-        Console.WriteLine("Playlist input possibilities: create playlist, list playlists, modify playlist, delete playlist");
+        Console.WriteLine("Playlist input possibilities: create, list, rename, delete");
         string? input = Console.ReadLine();
         if (input != null)
         {
             switch (input)
             {
-                case "create playlist":
+                case "create":
                     Playlists.MakePlaylist(database);
                     break;
-                case "list playlists":
+                case "list":
                     // this is guaranteed to not be null
                     Playlists.DisplayPlaylists(database, Users.LoggedInUser!.userid);
                     break;
-                case "modify playlist":
-                    Playlists.ModifyPlaylist(database);
+                case "rename":
+                    Playlists.RenamePlaylist(database);
                     break;
-                case "delete playlist":
+                case "delete":
                     Playlists.DeletePlaylist(database);
                     break;
                 default:
@@ -63,9 +63,9 @@ class Playlists
         delete.ExecuteNonQuery();
     }
 
-    private static void ModifyPlaylist(NpgsqlConnection database)
+    private static void RenamePlaylist(NpgsqlConnection database)
     {
-        Console.WriteLine("Enter the playlist to modify");
+        Console.WriteLine("Enter the playlist to rename");
         var playlistName = Console.ReadLine();
         Console.WriteLine("Enter the new playlist name");
         var newPlaylistName = Console.ReadLine();
@@ -82,7 +82,7 @@ class Playlists
         foreach (var playlist in playlists)
         {
             (float duration, int numSongs) = GetPlaylistDurationAndNumSongs(database, playlist.playlistid);
-            Console.WriteLine($"Playlist: {playlist.playlistname}, Duration: {duration} minutes, Number of Songs: {numSongs}");
+            Console.WriteLine($"Playlist: {playlist.playlistname}, Duration: {duration} seconds, Number of Songs: {numSongs}");
         }
         Console.WriteLine("------------");
     }
