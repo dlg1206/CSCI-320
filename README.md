@@ -1,7 +1,7 @@
 # Spotify2-ElectricBoogaloo
 
 Application Requirements
-- [ ] Users will be able to create new accounts and access via login. The system must record the date and time an account is created. It must also stored the date and time an user access into the application
+- [X] Users will be able to create new accounts and access via login. The system must record the date and time an account is created. It must also stored the date and time an user access into the application
 
 - [ ] Users will be able to create collections of music.
 
