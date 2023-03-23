@@ -9,6 +9,18 @@ class Playlists
         return new Playlist((int)reader["playlistid"], (int)reader["userid"], (DateTime)reader["creationdate"], (string)reader["playlistname"]);
     }
 
+    public static void DisplayPlaylists(NpgsqlConnection database, int userid)
+    {
+        List<Playlist> playlists = GetPlaylistsForUser(database, userid);
+        Console.WriteLine($"\nPlaylists: ");
+        foreach (var playlist in playlists)
+        {
+            (float duration, int numSongs) = GetPlaylistDurationAndNumSongs(database, playlist.playlistid);
+            Console.WriteLine($"Playlist: {playlist.playlistname}, Duration: {duration} minutes, Number of Songs: {numSongs}");
+        }
+        Console.WriteLine("------------");
+    }
+
     public static void MakePlaylist(NpgsqlConnection database)
     {
         Console.WriteLine("Enter playlist name");
@@ -29,7 +41,7 @@ class Playlists
 
     public static List<Playlist> GetPlaylistsForUser(NpgsqlConnection database, int userid)
     {
-        var query = new NpgsqlCommand($"SELECT * FROM playlist WHERE userid={userid}", database);
+        var query = new NpgsqlCommand($"SELECT * FROM playlist WHERE userid={userid} ORDER BY playlistname ASC", database);
         var reader = query.ExecuteReader();
 
         List<Playlist> playlists = new List<Playlist>();
@@ -38,7 +50,33 @@ class Playlists
             playlists.Add(readerToPlaylist(reader));
         }
 
+        reader.Close();
+
         return playlists;
+    }
+
+    public static (float, int) GetPlaylistDurationAndNumSongs(NpgsqlConnection database, int playlistId)
+    {
+        var query = new NpgsqlCommand($"SELECT SUM(length), COUNT(*) FROM (SELECT * FROM song, songplaylist WHERE playlistid = {playlistId} AND song.songid = songplaylist.songid) as songs", database);
+        var reader = query.ExecuteReader();
+        while (reader.Read())
+        {
+            float sum;
+            try
+            {
+                sum = reader.GetFloat(0);
+            }
+            catch (InvalidCastException)
+            {
+                sum = 0;
+            }
+            var numSongs = reader.GetInt32(1);
+            reader.Close();
+            return (sum, numSongs);
+        }
+
+        reader.Close();
+        return (-1, 0);
     }
 
     public static void InsertSongIntoPlaylist(NpgsqlConnection database, int playlistid, int songid)

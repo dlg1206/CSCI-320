@@ -8,7 +8,7 @@ class Users
 
     public static void HandleInput(NpgsqlConnection database)
     {
-        Console.WriteLine("User input possibilities: create account, create playlist, login");
+        Console.WriteLine("User input possibilities: create account, create playlist, list playlists, login");
         string? input = Console.ReadLine();
         if (input != null)
         {
@@ -24,6 +24,16 @@ class Users
                     if (LoggedInUser != null)
                     {
                         Playlists.MakePlaylist(database);
+                    }
+                    else
+                    {
+                        Console.WriteLine("You are not logged in");
+                    }
+                    break;
+                case "list playlists":
+                    if (LoggedInUser != null)
+                    {
+                        Playlists.DisplayPlaylists(database, LoggedInUser.userid);
                     }
                     else
                     {

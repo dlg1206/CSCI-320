@@ -3,7 +3,7 @@
 Application Requirements
 - [X] Users will be able to create new accounts and access via login. The system must record the date and time an account is created. It must also stored the date and time an user access into the application
 
-- [ ] Users will be able to create collections of music.
+- [X] Users will be able to create collections of music.
 
 - [ ] Users will be able to see the list of all their collections by name in ascending order. The list must show the following information per collection: Collection’s name, Number of songs in the collection, Total duration in minutes
 
