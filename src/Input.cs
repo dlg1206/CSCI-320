@@ -15,6 +15,8 @@ class Input
                     Users.HandleInput(database);
                     HandleInput(database);
                     break;
+                case "exit":
+                    break;
                 default:
                     Console.WriteLine("Not a valid input");
                     HandleInput(database);

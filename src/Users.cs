@@ -5,9 +5,10 @@ record User(int userid, string email, string username, string firstName, string 
 class Users
 {
     public static User? LoggedInUser { get; private set; } = null;
+
     public static void HandleInput(NpgsqlConnection database)
     {
-        Console.WriteLine("User input possibilities: create account, login");
+        Console.WriteLine("User input possibilities: create account, create playlist, login");
         string? input = Console.ReadLine();
         if (input != null)
         {
@@ -18,6 +19,16 @@ class Users
                     break;
                 case "login":
                     LoginPrompt(database);
+                    break;
+                case "create playlist":
+                    if (LoggedInUser != null)
+                    {
+                        Playlists.MakePlaylist(database);
+                    }
+                    else
+                    {
+                        Console.WriteLine("You are not logged in");
+                    }
                     break;
                 default:
                     Console.WriteLine("Not an input");
@@ -31,6 +42,7 @@ class Users
             HandleInput(database);
         }
     }
+
     private static void CreateAccountPrompt(NpgsqlConnection database)
     {
         Console.WriteLine("Enter your email");
@@ -60,6 +72,7 @@ class Users
             Console.WriteLine($"Failed to create user {username}");
         }
     }
+
     private static void LoginPrompt(NpgsqlConnection database)
     {
         Console.WriteLine("Enter your username");
@@ -75,6 +88,7 @@ class Users
             Console.WriteLine($"Failed to log in as {username}");
         }
     }
+
     private static User readerToUser(NpgsqlDataReader reader)
     {
         return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
@@ -82,6 +96,7 @@ class Users
                         (DateTime)reader["lastaccessed"], (string)reader["password"]
                         );
     }
+
     public static List<User> GetUsers(NpgsqlConnection database)
     {
 
