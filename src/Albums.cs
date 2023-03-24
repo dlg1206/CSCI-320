@@ -9,7 +9,7 @@ class Albums {
         return new Album(
                 (int)reader["albumid"],
                 (DateTime)reader["releasedate"],
-                (string)reader["albumname"]
+                (string)reader["name"]
         );
     }
 
