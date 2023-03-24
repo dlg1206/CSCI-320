@@ -13,6 +13,31 @@ class Songs
     private static SearchSong searchReaderToSong(NpgsqlDataReader reader) {
         return new SearchSong((string)reader["title"], (decimal)reader["length"], (int)reader["timeslistened"], (string)reader["name"]);
     }
+    
+    public static void HandleInput(NpgsqlConnection database)
+    {
+        Console.WriteLine("Song input possibilities: listen to");
+        string? input = Console.ReadLine();
+        if (input != null)
+        {
+            switch (input)
+            {
+                case "listen to":
+                    ListenInput(database);
+                    break;
+
+                default:
+                    Console.WriteLine("Not an input");
+                    HandleInput(database);
+                    break;
+            }
+        }
+        else
+        {
+            Console.WriteLine("input is null, try again");
+            HandleInput(database);
+        }
+    }
 
     public static List<Song> GetSongs(NpgsqlConnection database)
     {
@@ -46,5 +71,20 @@ class Songs
         else {
             return null;
         }
+
+    }
+    
+    private static void ListenInput(NpgsqlConnection database)
+    {
+        Console.WriteLine("Enter the song name to listen to");
+        string? song = Console.ReadLine();
+        ListenTo(database, song);
+    }
+
+    public static void ListenTo(NpgsqlConnection database, string songName)
+    {
+        var query = new NpgsqlCommand($"UPDATE song SET timeslistened = timeslistened + 1 WHERE title = '{songName}'", database);
+        query.Prepare();
+        query.ExecuteNonQuery();
     }
 }
