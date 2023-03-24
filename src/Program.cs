@@ -36,8 +36,18 @@ public class DBTest
                     // Console.WriteLine(Users.LogIn(conn, "tommy", "pass"));
                     // Console.WriteLine(Users.LogIn(conn, "test", "pass"));
                     // Console.WriteLine(Users.CreateUser(conn, "test@email.com", "testUser", "firstname", "lastname", new DateOnly(2022, 04, 20), "password1"));
-                
-                    //Console.WriteLine(Songs.SearchSongByTitle(conn, "born"));
+
+                        
+                    // foreach(var song in Songs.SearchSongByTitle(conn, "TEST TEST TEST"))
+                    // {
+                    //     Console.WriteLine(song);
+                    // }
+                    // foreach(var song in Songs.SearchSongByArtist(conn, "Shayna McKevin"))
+                    // {
+                    //     Console.WriteLine(song);
+                    // }
+                        
+
                 }
             }
             finally
