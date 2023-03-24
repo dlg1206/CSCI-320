@@ -5,7 +5,7 @@ class Input
     // takes the database handle, which is just passed from function to function
     public static void HandleInput(NpgsqlConnection database)
     {
-        Console.WriteLine("Possible inputs are: user, exit");
+        Console.WriteLine("Possible inputs are: user, search, exit");
         string? input = Console.ReadLine();
         if (input != null)
         {
@@ -13,6 +13,10 @@ class Input
             {
                 case "user":
                     Users.HandleInput(database);
+                    HandleInput(database);
+                    break;
+                case "search":
+                    Search.HandleInput(database);
                     HandleInput(database);
                     break;
                 case "exit":
