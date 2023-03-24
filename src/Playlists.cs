@@ -18,7 +18,7 @@ class Playlists
     {
         while (true)
         {
-            Console.WriteLine("Playlist possibilities: back, create, list, rename, delete, edit");
+            Console.WriteLine("Playlist possibilities: back, create, list, rename, delete, edit, view, listen");
             string? input = Console.ReadLine();
             switch (input)
             {
@@ -26,8 +26,7 @@ class Playlists
                     Playlists.Create(database);
                     break;
                 case "list":
-                    // this is guaranteed to not be null
-                    Playlists.DisplayPlaylists(database, Users.LoggedInUser!.userid);
+                    Playlists.DisplayPlaylists(database);
                     break;
                 case "rename":
                     Playlists.Rename(database);
@@ -37,6 +36,12 @@ class Playlists
                     break;
                 case "edit":
                     Playlists.HandleEditInput(database);
+                    break;
+                case "listen":
+                    Playlists.ListenTo(database);
+                    break;
+                case "view":
+                    Playlists.Info(database);
                     break;
                 case "back":
                     return;
@@ -49,25 +54,8 @@ class Playlists
 
     public static void HandleEditInput(NpgsqlConnection database)
     {
-        Playlists.DisplayPlaylists(database, Users.LoggedInUser!.userid);
-        Console.WriteLine("Enter the playlist to edit");
-        int? playlistId = null;
-        while (!playlistId.HasValue)
-        {
-            var playlistName = Console.ReadLine();
-            if (playlistName == "back")
-            {
-                return;
-            }
-            List<Playlist> playlists = GetForUser(database, Users.LoggedInUser!.userid);
-            playlistId = playlists.Find(x => x.playlistname == playlistName)?.playlistid;
-            if (playlistId == null)
-            {
-                Console.WriteLine("Couldn't find that playlist, try again or back");
-            }
-        }
-
-
+        int? playlistId = GetPlaylist(database);
+        if (playlistId == null) return;
         while (true)
         {
             DisplayPlaylist(database, (int)playlistId);
@@ -91,6 +79,37 @@ class Playlists
                     break;
             }
         }
+    }
+
+    private static int? GetPlaylist(NpgsqlConnection database)
+    {
+        Playlists.DisplayPlaylists(database);
+        Console.WriteLine("Enter a playlist name");
+        while (true)
+        {
+            var playlistName = Console.ReadLine();
+            if (playlistName == "back")
+            {
+                return null;
+            }
+            var cmd = new NpgsqlCommand($"SELECT playlistid FROM playlist WHERE playlistname='{playlistName}' AND userid={Users.LoggedInUser!.userid}", database);
+            var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                var id = (int)reader["playlistId"];
+                reader.Close();
+                return id;
+            }
+            reader.Close();
+            Console.WriteLine("Couldn't find that playlist, try again or back");
+        }
+    }
+
+    private static void Info(NpgsqlConnection database)
+    {
+        int? playlistid = GetPlaylist(database);
+        if (playlistid == null) return;
+        DisplayPlaylist(database, (int)playlistid);
     }
 
     private static void Delete(NpgsqlConnection database)
@@ -125,9 +144,9 @@ class Playlists
         update.ExecuteNonQuery();
     }
 
-    public static void DisplayPlaylists(NpgsqlConnection database, int userid)
+    public static void DisplayPlaylists(NpgsqlConnection database)
     {
-        List<Playlist> playlists = GetForUser(database, userid);
+        List<Playlist> playlists = GetForUser(database, Users.LoggedInUser!.userid);
         Console.WriteLine($"\nPlaylists: ");
         foreach (var playlist in playlists)
         {
@@ -178,6 +197,11 @@ class Playlists
 
     public static List<Song> GetSongs(NpgsqlConnection database, int playlistid)
     {
+        return Songs.GetSongs(database, GetSongIds(database, playlistid));
+    }
+
+    public static List<int> GetSongIds(NpgsqlConnection database, int playlistid)
+    {
         var query = new NpgsqlCommand($"SELECT songid FROM songplaylist WHERE playlistid={playlistid}", database);
         var reader = query.ExecuteReader();
 
@@ -188,7 +212,7 @@ class Playlists
         }
         reader.Close();
 
-        return Songs.GetSongs(database, ids);
+        return ids;
     }
 
     public static (float, int) GetDurationAndNumSongs(NpgsqlConnection database, int playlistId)
@@ -263,5 +287,21 @@ class Playlists
         insert.ExecuteNonQuery();
         Console.WriteLine($"Added {album.name} to playlist, which contains the following new songs:");
         Songs.PrintSongs(database, songs);
+    }
+
+    public static void ListenTo(NpgsqlConnection database)
+    {
+        int? playlistid = GetPlaylist(database);
+        if (playlistid == null) return;
+        var songs = GetSongIds(database, (int)playlistid);
+        if (songs.Count == 0) return;
+
+        var group = string.Join(",", songs);
+        var query = new NpgsqlCommand(
+                $"UPDATE song SET timeslistened = timeslistened + 1 WHERE songid in ({group})",
+                database
+        );
+        query.Prepare();
+        query.ExecuteNonQuery();
     }
 }
