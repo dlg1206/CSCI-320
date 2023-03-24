@@ -52,24 +52,29 @@ class Playlists
         Playlists.DisplayPlaylists(database, Users.LoggedInUser!.userid);
         Console.WriteLine("Enter the playlist to edit");
         int? playlistId = null;
-        while (!playlistId.HasValue) {
+        while (!playlistId.HasValue)
+        {
             var playlistName = Console.ReadLine();
-            if (playlistName == "back") {
+            if (playlistName == "back")
+            {
                 return;
             }
             List<Playlist> playlists = GetForUser(database, Users.LoggedInUser!.userid);
             playlistId = playlists.Find(x => x.playlistname == playlistName)?.playlistid;
-            if (playlistId == null) {
+            if (playlistId == null)
+            {
                 Console.WriteLine("Couldn't find that playlist, try again or back");
             }
         }
 
 
-        while (true) {
+        while (true)
+        {
             DisplayPlaylist(database, (int)playlistId);
             Console.WriteLine("Playlist edit possibilities: back, add, remove, add album");
             string? input = Console.ReadLine();
-            switch (input) {
+            switch (input)
+            {
                 case "add":
                     Playlists.InsertSong(database, (int)playlistId);
                     break;
@@ -238,15 +243,18 @@ class Playlists
         if (album == null) return;
 
         List<Song> songs = Albums.GetSongs(database, album.albumid);
-        if (songs.Count == 0) {
+        if (songs.Count == 0)
+        {
             Console.WriteLine("No songs were added.");
             return;
         }
-        foreach (var id in GetSongs(database, playlistid)) {
+        foreach (var id in GetSongs(database, playlistid))
+        {
             songs.Remove(id);
         }
         List<string> valueList = new List<string>();
-        foreach (var song in songs) {
+        foreach (var song in songs)
+        {
             valueList.Add($"({song.songid}, {playlistid})");
         }
         string values = string.Join(", ", valueList);
