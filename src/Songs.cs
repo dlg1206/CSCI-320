@@ -37,9 +37,10 @@ class Songs
 
     public static List<Song> GetSongs(NpgsqlConnection database, List<int> ids)
     {
+        List<Song> songs = new List<Song>();
+        if (ids.Count == 0) return songs;
         var cmd = new NpgsqlCommand($"SELECT * FROM song WHERE songid in ({string.Join(",", ids)})", database);
         var reader = cmd.ExecuteReader();
-        List<Song> songs = new List<Song>();
         while (reader.Read())
         {
             songs.Add(readerToSong(reader));
@@ -68,5 +69,11 @@ class Songs
         }
 
         return song;
+    }
+
+    public static void PrintSongs(NpgsqlConnection database, List<Song> songs) {
+        foreach (var song in songs) {
+            Console.WriteLine($"    {Songs.FormatSong(database, song)}");
+        }
     }
 }

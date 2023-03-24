@@ -67,7 +67,7 @@ class Playlists
 
         while (true) {
             DisplayPlaylist(database, (int)playlistId);
-            Console.WriteLine("Playlist edit possibilities: back, add, remove");
+            Console.WriteLine("Playlist edit possibilities: back, add, remove, add album");
             string? input = Console.ReadLine();
             switch (input) {
                 case "add":
@@ -75,6 +75,9 @@ class Playlists
                     break;
                 case "remove":
                     Playlists.RemoveSong(database, (int)playlistId);
+                    break;
+                case "add album":
+                    Playlists.InsertAlbum(database, (int)playlistId);
                     break;
                 case "back":
                     return;
@@ -131,10 +134,7 @@ class Playlists
     public static void DisplayPlaylist(NpgsqlConnection database, int playlistid)
     {
         Console.WriteLine($"\nSongs in playlist: ");
-        foreach (var song in GetSongs(database, playlistid))
-        {
-            Console.WriteLine($"    {Songs.FormatSong(database, song)}");
-        }
+        Songs.PrintSongs(database, GetSongs(database, playlistid));
     }
 
     public static void Create(NpgsqlConnection database)
@@ -145,7 +145,7 @@ class Playlists
         var insert = new NpgsqlCommand("INSERT INTO playlist(userid, creationdate, playlistname) VALUES ($1, $2, $3)", database)
         {
             Parameters = {
-                new() { Value = Users.LoggedInUser.userid },
+                new() { Value = Users.LoggedInUser?.userid },
                 new() { Value = DateTime.Now },
                 new() { Value = playlistName }
             }
@@ -230,5 +230,30 @@ class Playlists
         remove.Prepare();
         remove.ExecuteNonQuery();
         Console.WriteLine($"Removed {song.title} from playlist");
+    }
+
+    public static void InsertAlbum(NpgsqlConnection database, int playlistid)
+    {
+        Album? album = Albums.SelectAlbum(database);
+        if (album == null) return;
+
+        List<Song> songs = Albums.GetSongs(database, album.albumid);
+        if (songs.Count == 0) {
+            Console.WriteLine("No songs were added.");
+            return;
+        }
+        foreach (var id in GetSongs(database, playlistid)) {
+            songs.Remove(id);
+        }
+        List<string> valueList = new List<string>();
+        foreach (var song in songs) {
+            valueList.Add($"({song.songid}, {playlistid})");
+        }
+        string values = string.Join(", ", valueList);
+        var insert = new NpgsqlCommand($"INSERT INTO songplaylist(songid, playlistid) VALUES {values}", database);
+        insert.Prepare();
+        insert.ExecuteNonQuery();
+        Console.WriteLine($"Added {album.name} to playlist, which contains the following new songs:");
+        Songs.PrintSongs(database, songs);
     }
 }
