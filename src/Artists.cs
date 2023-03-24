@@ -14,7 +14,10 @@ class Artists {
     }
 
     public static List<Artist> ForSong(NpgsqlConnection database, int songid) {
-        var query = new NpgsqlCommand($"SELECT * FROM artistsong WHERE songid={songid}", database);
+        var query = new NpgsqlCommand(
+                $"SELECT a.* FROM artistsong s join artist a on s.artistid=a.artistid WHERE s.songid={songid}",
+                database
+        );
         var reader = query.ExecuteReader();
 
         List<Artist> artists = new List<Artist>();
