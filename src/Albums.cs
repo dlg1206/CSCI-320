@@ -95,6 +95,22 @@ class Albums
         return null;
     }
 
+    public static Album? GetAlbumForSong(NpgsqlConnection database, int songId)
+    {
+        var albumQuery = new NpgsqlCommand($"SELECT * FROM album WHERE albumid IN (SELECT albumid FROM songalbum WHERE songid = {songId})", database);
+        var reader = albumQuery.ExecuteReader();
+        if (reader.Read())
+        {
+            var album = readerToAlbum(reader);
+            reader.Close();
+            return album;
+        }
+
+        reader.Close();
+
+        return null;
+    }
+
     private static void ListenInput(NpgsqlConnection database)
     {
         Console.WriteLine("Enter the song name to listen to");
