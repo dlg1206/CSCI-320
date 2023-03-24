@@ -11,7 +11,7 @@ Application Requirements
 
 - [ ] can sort by song name, artist’s name, genre, and released year (ascending and descending)
 
-- [ ] can add and delete albums, and songs from their collection
+- [X] can add and delete albums, and songs from their collection
 
 - [X] can modify the name of a collection. They can also delete an entire collection
 
