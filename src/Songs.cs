@@ -247,7 +247,7 @@ class Songs
 
     public static string FormatSong(NpgsqlConnection database, Song song)
     {
-        var artists = string.Join(", ", Artists.ForSong(database, song.songid));
+        var artists = string.Join(", ", Artists.ForSong(database, song.songid).Select(a => a.name));
         if (artists.Length > 0) artists = " by " + artists;
         return $"{song.title}{artists}: {song.length} seconds, released on {song.releasedate}";
     }
