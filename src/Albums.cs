@@ -54,6 +54,21 @@ class Albums
         return Songs.GetSongs(database, ids);
     }
 
+    public static Album? ForSong(NpgsqlConnection database, int songid)
+    {
+        var query = new NpgsqlCommand($"SELECT a.* FROM album a join songalbum s on a.albumid=s.albumid WHERE s.songid={songid}", database);
+        var reader = query.ExecuteReader();
+
+        Album? album = null;
+
+        if (reader.Read())
+        {
+            album = readerToAlbum(reader);
+        }
+        reader.Close();
+        return album;
+    }
+
     public static void HandleInput(NpgsqlConnection database)
     {
         Console.WriteLine("Album input possibilities: listen to");
