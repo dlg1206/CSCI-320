@@ -5,16 +5,19 @@ record Artist(
         string name
 );
 
-class Artists {
-    private static Artist ReaderToArtist(NpgsqlDataReader reader) {
+class Artists
+{
+    private static Artist ReaderToArtist(NpgsqlDataReader reader)
+    {
         return new Artist(
                 (int)reader["artistid"],
                 (string)reader["name"]
         );
     }
 
-    public static List<Artist> ForSong(NpgsqlConnection database, int songid) {
-        var query = new NpgsqlCommand($"SELECT * FROM artistsong WHERE songid={songid}", database);
+    public static List<Artist> ForSong(NpgsqlConnection database, int songid)
+    {
+        var query = new NpgsqlCommand($"SELECT * FROM artist WHERE artistid IN (SELECT artistid FROM artistsong WHERE songid={songid})", database);
         var reader = query.ExecuteReader();
 
         List<Artist> artists = new List<Artist>();

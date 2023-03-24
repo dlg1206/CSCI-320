@@ -31,13 +31,13 @@ public class DBTest
                 {
                     conn.Open();
                     Console.WriteLine("Connected to DB");
-                    Input.HandleInput(conn);
+                    // Input.HandleInput(conn);
                     // Users.GetUsers(conn);
                     // Console.WriteLine(Users.LogIn(conn, "tommy", "pass"));
                     // Console.WriteLine(Users.LogIn(conn, "test", "pass"));
                     // Console.WriteLine(Users.CreateUser(conn, "test@email.com", "testUser", "firstname", "lastname", new DateOnly(2022, 04, 20), "password1"));
 
-                        
+
                     // foreach(var song in Songs.SearchSongByTitle(conn, "TEST TEST TEST"))
                     // {
                     //     Console.WriteLine(song);
@@ -46,7 +46,11 @@ public class DBTest
                     // {
                     //     Console.WriteLine(song);
                     // }
-                        
+                    foreach (var song in Songs.SearchSongByGenre(conn, "Art Rock"))
+                    {
+                        Console.WriteLine(song);
+                    }
+
 
                 }
             }

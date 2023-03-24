@@ -23,14 +23,16 @@ class Songs
         return new SearchSong((string)reader["title"], (decimal)reader["length"], (int)reader["timeslistened"], (string)reader["name"]);
     }
 
-    private static SearchArtist artistReaderToArtist(NpgsqlDataReader reader) {
+    private static SearchArtist artistReaderToArtist(NpgsqlDataReader reader)
+    {
         return new SearchArtist((int)reader["artistid"]);
     }
 
-    private static SongIDs songIDReaderToSongID(NpgsqlDataReader reader) {
+    private static SongIDs songIDReaderToSongID(NpgsqlDataReader reader)
+    {
         return new SongIDs((int)reader["songid"]);
     }
-    
+
 
     public static void HandleInput(NpgsqlConnection database)
     {
@@ -81,7 +83,8 @@ class Songs
             var reader = cmd.ExecuteReader();
             var returnSongs = new List<SearchSong>();
 
-            while (reader.Read()) {
+            while (reader.Read())
+            {
                 returnSongs.Add(searchReaderToSong(reader));
             }
             reader.Close();
@@ -93,53 +96,152 @@ class Songs
         }
     }
 
-    public static List<SearchSong>? SearchSongByArtist(NpgsqlConnection database, String artistName) {
+    public static List<SearchSong>? SearchSongByArtist(NpgsqlConnection database, String artistName)
+    {
 
-        if (artistName.Length > 0) {
+        if (artistName.Length > 0)
+        {
             // Get artist ids first
             var cmd = new NpgsqlCommand($"SELECT artistid FROM artist WHERE name LIKE '{artistName}'", database);
             var reader = cmd.ExecuteReader();
             var artists = new List<SearchArtist>();
 
-            while (reader.Read()) {
+            while (reader.Read())
+            {
                 artists.Add(artistReaderToArtist(reader));
             }
             reader.Close();
 
             // Get song IDs matching artist IDs
             var songIDs = new List<SongIDs>();
-            foreach (var id in artists) {
+            foreach (var id in artists)
+            {
                 var cmd1 = new NpgsqlCommand($"SELECT songid FROM artistsong WHERE artistid = {id.artistid}", database);
                 var reader1 = cmd1.ExecuteReader();
-                while (reader1.Read()) {
+                while (reader1.Read())
+                {
                     songIDs.Add(songIDReaderToSongID(reader1));
                 }
                 reader1.Close();
             }
-            
+
             // Get the rest of the song data matching the song IDs
             var returnSongs = new List<SearchSong>();
-            foreach (var id in songIDs) {
+            foreach (var id in songIDs)
+            {
                 var cmd3 = new NpgsqlCommand($"SELECT s.title, s.length, s.timeslistened, a2.name FROM song s LEFT JOIN artistsong a on s.songid = a.songid LEFT JOIN artist a2 on a.artistid = a2.artistid WHERE s.songid = {id.songid} AND a2.name IS NOT NULL;", database);
                 var reader3 = cmd3.ExecuteReader();
 
-                while (reader3.Read()) {
+                while (reader3.Read())
+                {
                     returnSongs.Add(searchReaderToSong(reader3));
                 }
                 reader3.Close();
             }
             return returnSongs;
         }
-        else {
+        else
+        {
             return null;
         }
     }
 
-    public static List<SearchSong>? SearchSongByAlbum(NpgsqlConnection database, String albumName) {
+    public static List<SearchSong>? SearchSongByAlbum(NpgsqlConnection database, String albumName)
+    {
+        var albumQuery = new NpgsqlCommand($"SELECT * FROM album WHERE name LIKE '{albumName}'", database);
+        var reader = albumQuery.ExecuteReader();
+        if (reader.Read())
+        {
+            var album = Albums.readerToAlbum(reader);
+            reader.Close();
+
+            var songIdQuery = new NpgsqlCommand($"SELECT songId FROM songalbum WHERE albumid = {album.albumid}", database);
+            var songIdReader = songIdQuery.ExecuteReader();
+
+            List<int> songIds = new List<int>();
+            while (songIdReader.Read())
+            {
+                songIds.Add(songIdReader.GetInt32(0));
+            }
+            songIdReader.Close();
+
+            Dictionary<int, List<Artist>> songIdArtists = new Dictionary<int, List<Artist>>();
+            List<Song> songs = new List<Song>();
+            foreach (int songId in songIds)
+            {
+                songIdArtists.Add(songId, Artists.ForSong(database, songId));
+                var songInfoQuery = new NpgsqlCommand($"SELECT * FROM song WHERE songid = {songId}", database);
+                var songInfoReader = songInfoQuery.ExecuteReader();
+                if (songInfoReader.Read())
+                {
+                    songs.Add(readerToSong(songInfoReader));
+                }
+
+                songInfoReader.Close();
+            }
+
+            List<SearchSong> searchSongs = new List<SearchSong>();
+            foreach (Song song in songs)
+            {
+                var artists = songIdArtists[song.songid];
+                if (artists.Count == 0) continue;
+                SearchSong searchSong = new SearchSong(song.title, song.length, song.timeslistened, artists[0].name);
+                searchSongs.Add(searchSong);
+            }
+
+            return searchSongs;
+        }
+
         return null;
     }
 
-    public static List<SearchSong>? SearchSongByGenre(NpgsqlConnection database, String genreName) {
+    // this query has fairly similar logic as searchsongbyalbum
+    public static List<SearchSong>? SearchSongByGenre(NpgsqlConnection database, String genreName)
+    {
+        var genreQuery = new NpgsqlCommand($"SELECT * FROM genre WHERE name = '{genreName}'", database);
+        var reader = genreQuery.ExecuteReader();
+        if (reader.Read())
+        {
+            var genre = Genres.readerToGenre(reader);
+            reader.Close();
+
+            var songIdQuery = new NpgsqlCommand($"SELECT songId FROM songgenre WHERE genreid = {genre.genreid}", database);
+            var songIdReader = songIdQuery.ExecuteReader();
+
+            List<int> songIds = new List<int>();
+            while (songIdReader.Read())
+            {
+                songIds.Add(songIdReader.GetInt32(0));
+            }
+            songIdReader.Close();
+
+
+            Dictionary<int, List<Artist>> songIdArtists = new Dictionary<int, List<Artist>>();
+            List<Song> songs = new List<Song>();
+            foreach (int songId in songIds)
+            {
+                songIdArtists.Add(songId, Artists.ForSong(database, songId));
+                var songInfoQuery = new NpgsqlCommand($"SELECT * FROM song WHERE songid = {songId}", database);
+                var songInfoReader = songInfoQuery.ExecuteReader();
+                if (songInfoReader.Read())
+                {
+                    songs.Add(readerToSong(songInfoReader));
+                }
+
+                songInfoReader.Close();
+            }
+
+            List<SearchSong> searchSongs = new List<SearchSong>();
+            foreach (Song song in songs)
+            {
+                var artists = songIdArtists[song.songid];
+                if (artists.Count == 0) continue;
+                SearchSong searchSong = new SearchSong(song.title, song.length, song.timeslistened, artists[0].name);
+                searchSongs.Add(searchSong);
+            }
+
+            return searchSongs;
+        }
         return null;
     }
 

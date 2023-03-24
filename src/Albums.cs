@@ -2,9 +2,10 @@ using Npgsql;
 
 record Album(int albumid, DateTime releaseDate, string name);
 
-class Albums {
+class Albums
+{
 
-    private static Album readerToAlbum(NpgsqlDataReader reader)
+    public static Album readerToAlbum(NpgsqlDataReader reader)
     {
         return new Album(
                 (int)reader["albumid"],
@@ -13,11 +14,13 @@ class Albums {
         );
     }
 
-    public static Album? SelectAlbum(NpgsqlConnection database) {
+    public static Album? SelectAlbum(NpgsqlConnection database)
+    {
         Album? album = null;
         Console.WriteLine("Enter album name:");
 
-        while (album == null) {
+        while (album == null)
+        {
             var title = Console.ReadLine();
             if (title == "back") return null;
             var cmd = new NpgsqlCommand($"SELECT * FROM album WHERE name='{title}'", database);
@@ -25,7 +28,9 @@ class Albums {
             if (reader.Read())
             {
                 album = readerToAlbum(reader);
-            } else {
+            }
+            else
+            {
                 Console.WriteLine("Unknown album name, try again or back");
             }
             reader.Close();
