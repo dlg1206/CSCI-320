@@ -159,6 +159,5 @@ class Songs
             insertOrUpdate.Prepare();
             insertOrUpdate.ExecuteNonQuery();
         }
-
     }
 }
