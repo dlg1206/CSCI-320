@@ -109,11 +109,11 @@ class Search
             whereout.Add($"artist '{artist}'");
         }
         if (album != null) {
-            wheres.Add($" WHERE UPPER(al.name) LIKE UPPER('%{album}%')");
+            wheres.Add($"UPPER(al.name) LIKE UPPER('%{album}%')");
             whereout.Add($"album {album}");
         }
         if (genre != null) {
-            wheres.Add($" WHERE UPPER(g.name) LIKE UPPER('%{genre}%')");
+            wheres.Add($"UPPER(g.name) LIKE UPPER('%{genre}%')");
             whereout.Add($"genre {genre}");
         }
 

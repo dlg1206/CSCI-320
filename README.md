@@ -7,9 +7,9 @@ Application Requirements
 
 - [X] Users will be able to see the list of all their collections by name in ascending order. The list must show the following information per collection: Collection’s name, Number of songs in the collection, Total duration in minutes
 
-- [ ] will be able to search for songs by name, artist, album, and genre. The resulting list of songs must show the song’s name, the artist’s name, the album, the length and the listen count. The list must be sorted alphabetically (ascending) by song’s name and artist’s name.
+- [X] will be able to search for songs by name, artist, album, and genre. The resulting list of songs must show the song’s name, the artist’s name, the album, the length and the listen count. The list must be sorted alphabetically (ascending) by song’s name and artist’s name.
 
-- [ ] can sort by song name, artist’s name, genre, and released year (ascending and descending)
+- [X] can sort by song name, artist’s name, genre, and released year (ascending and descending)
 
 - [X] can add and delete albums, and songs from their collection
 
