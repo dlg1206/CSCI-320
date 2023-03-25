@@ -70,7 +70,7 @@ class Songs
         int? ulistens = Listens.UserCountForSong(database, song.songid);
         string userListens = ulistens == null ? "" : $" ({ulistens})";
         return $"{song.title}{artists}{albumstr}"
-            + $" | {song.length} seconds"
+            + $" | {song.length / 60} minutes"
             + $" | released {song.releasedate.ToString("MM/dd/ yyyy")}"
             + $" | {song.timeslistened}{userListens} listens";
     }

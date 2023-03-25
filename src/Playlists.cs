@@ -151,7 +151,7 @@ class Playlists
         foreach (var playlist in playlists)
         {
             (float duration, int numSongs) = GetDurationAndNumSongs(database, playlist.playlistid);
-            Console.WriteLine($"    Playlist: {playlist.playlistname}, Duration: {duration} seconds, Number of Songs: {numSongs}");
+            Console.WriteLine($"    Playlist: {playlist.playlistname}, Duration: {duration / 60} minutes, Number of Songs: {numSongs}");
         }
     }
 
@@ -293,15 +293,12 @@ class Playlists
     {
         int? playlistid = GetPlaylist(database);
         if (playlistid == null) return;
-        var songs = GetSongIds(database, (int)playlistid);
+        var songs = GetSongs(database, (int)playlistid);
         if (songs.Count == 0) return;
 
-        var group = string.Join(",", songs);
-        var query = new NpgsqlCommand(
-                $"UPDATE song SET timeslistened = timeslistened + 1 WHERE songid in ({group})",
-                database
-        );
-        query.Prepare();
-        query.ExecuteNonQuery();
+        foreach (Song song in songs)
+        {
+            Songs.ListenTo(database, song);
+        }
     }
 }
