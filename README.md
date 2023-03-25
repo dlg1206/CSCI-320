@@ -21,3 +21,11 @@ Application Requirements
 
 - [X] application must also allow an user to un-follow a friend
 
+# To run
+**BEFORE RUNNING**
+Create a `.env` file in the same directory as the `c#.csproj` with the following content:
+```
+DB_USER=<RIT ID>
+DB_PASS=<RIT PW>
+```
+Then do `dotnet run`
