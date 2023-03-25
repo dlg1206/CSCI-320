@@ -67,7 +67,12 @@ class Songs
         if (artists.Length > 0) artists = " | by " + artists;
         var album = Albums.ForSong(database, song.songid);
         string albumstr = album == null ? "" : " | in " + album.name;
-        return $"{song.title}{artists}{albumstr} | {song.length} seconds | released {song.releasedate.ToString("MM/dd/yyyy")} | {song.timeslistened} listens";
+        int? ulistens = Listens.UserCountForSong(database, song.songid);
+        string userListens = ulistens == null ? "" : $" ({ulistens})";
+        return $"{song.title}{artists}{albumstr}"
+            + $" | {song.length} seconds"
+            + $" | released {song.releasedate.ToString("MM/dd/ yyyy")}"
+            + $" | {song.timeslistened}{userListens} listens";
     }
 
     public static List<Song> GetSongs(NpgsqlConnection database, List<int> ids)
