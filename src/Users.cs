@@ -243,7 +243,8 @@ class Users
         var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            if ((string)reader["password"] == password)
+            // convert to salted hash and then compare
+            if ((string)reader["password"] == toSaltedHash(password, username))
             {
                 LoggedInUser = readerToUser(reader);
                 reader.Close();
