@@ -263,6 +263,15 @@ class Users
                 //     right = pw[insertIndex:]    # right of insert
                 //     pw = left + c + right
                 // 
+                // salt w/ username since unique
+                var salt = "thereisasus" + username + "amongus";
+                foreach (var c in salt)
+                {
+                    var insertIndex = c % password.Length;
+                    var left = password.Substring(0, insertIndex);
+                    var right = password.Substring(insertIndex, password.Length - insertIndex);
+                    password = left + c + right;
+                }
 
                 using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
                 {
