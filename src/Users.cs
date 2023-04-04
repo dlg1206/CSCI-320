@@ -251,7 +251,19 @@ class Users
             {
                 reader.Close();
                 // Checking for long enough password
-                // Hash password here
+                
+                // Hash and SALT password
+                // python implementation
+                // pw = "password"
+                // salt = "ThereIsASusImposterAmongus"
+                //
+                // for c in salt:
+                //     insertIndex = ord(c) % len(pw)  # get rand index in pw
+                //     left = pw[0:insertIndex]    # left of insert
+                //     right = pw[insertIndex:]    # right of insert
+                //     pw = left + c + right
+                // 
+
                 using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
                 {
                     Parameters =
