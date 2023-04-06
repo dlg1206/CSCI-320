@@ -45,14 +45,20 @@
 ### Report
 The [report](https://www.overleaf.com/3721374731njmxsbfqtjgb) will be updated to include:
 – [ ] explaining the process/techniques used to analyze the data (what types of algorithms were used, did you use a tool for analytics, or did you create materialized views, etc)
+
 – [ ] explaining the indexes created to boost your application program’s performance
+
 – [ ] containing an appendix listing all of the SQL statements used in this phase
 
 ### Poster
 – [ ] your team name
+
 – [ ] the names of all team members
+
 – [ ] the observations from the data analytics
+
 – [ ] technologies used (Excel, Python, etc)
+
 – [ ] visual representation of the data (charts, graphs, and other visual representations are required)
 
 ### Video Demo
