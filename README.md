@@ -1,6 +1,6 @@
 # Spotify2-ElectricBoogaloo
 
-Application Requirements
+## Phase 2 Application Requirements
 - [X] Users will be able to create new accounts and access via login. The system must record the date and time an account is created. It must also stored the date and time an user access into the application
 
 - [X] Users will be able to create collections of music.
@@ -20,6 +20,27 @@ Application Requirements
 - [X] can follow a friend. Users can search for new friends by email
 
 - [X] application must also allow an user to un-follow a friend
+
+## Phase 3 Application Requirements
+
+### Functional Requirements
+**The application provides an user profile functionality that displays the following information:**
+- [] The number of collections the user has
+
+- [] The number of followers
+
+- [] The number of following
+
+- [] Their top 10 artists (by most plays, additions to collections, or combination)
+  
+**The application must provide a song recommendation system with the following options:**
+- [] The top 50 most popular songs in the last 30 days (rolling)
+
+- [] The top 50 most popular songs among my friends
+
+- [] The top 5 most popular genres of the month (calendar month)
+
+- [] For you: Recommend songs to listen to based on your play history (e.g. genre, artist) and the play history of similar users
 
 # To run
 **BEFORE RUNNING**
