@@ -25,22 +25,22 @@
 
 ### Functional Requirements
 **The application provides an user profile functionality that displays the following information:**
-- [] The number of collections the user has
+- [ ] The number of collections the user has
 
-- [] The number of followers
+- [ ] The number of followers
 
-- [] The number of following
+- [ ] The number of following
 
-- [] Their top 10 artists (by most plays, additions to collections, or combination)
+- [ ] Their top 10 artists (by most plays, additions to collections, or combination)
   
 **The application must provide a song recommendation system with the following options:**
-- [] The top 50 most popular songs in the last 30 days (rolling)
+- [ ] The top 50 most popular songs in the last 30 days (rolling)
 
-- [] The top 50 most popular songs among my friends
+- [ ] The top 50 most popular songs among my friends
 
-- [] The top 5 most popular genres of the month (calendar month)
+- [ ] The top 5 most popular genres of the month (calendar month)
 
-- [] For you: Recommend songs to listen to based on your play history (e.g. genre, artist) and the play history of similar users
+- [ ] For you: Recommend songs to listen to based on your play history (e.g. genre, artist) and the play history of similar users
 
 # To run
 **BEFORE RUNNING**
