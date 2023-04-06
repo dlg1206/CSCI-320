@@ -42,7 +42,8 @@
 
 - [ ] For you: Recommend songs to listen to based on your play history (e.g. genre, artist) and the play history of similar users
 
-### Report
+### Non-Functional Requirements
+**Report**
 The [report](https://www.overleaf.com/3721374731njmxsbfqtjgb) will be updated to include:
 
 - [ ] explaining the process/techniques used to analyze the data (what types of algorithms were used, did you use a tool for analytics, or did you create materialized views, etc)
@@ -51,7 +52,7 @@ The [report](https://www.overleaf.com/3721374731njmxsbfqtjgb) will be updated to
 
 - [ ] containing an appendix listing all of the SQL statements used in this phase
 
-### Poster
+**Poster**
 - [ ] your team name
 
 - [ ] the names of all team members
@@ -62,7 +63,7 @@ The [report](https://www.overleaf.com/3721374731njmxsbfqtjgb) will be updated to
 
 - [ ] visual representation of the data (charts, graphs, and other visual representations are required)
 
-### Video Demo
+**Video Demo**
 A single 7-10 minutes video that demonstrate the final version of your application and present your poster. Your video must be structured as follows:
 
 1. Start by demonstrating the final version of your program. Make sure to demonstrate all functionalities defined in the Application Requirements from Phase
@@ -71,7 +72,7 @@ A single 7-10 minutes video that demonstrate the final version of your applicati
    that you demonstrate all the required functionality.
 3. After that, you will present your poster.
 
-### Data Analysis
+**Data Analysis**
 
 # To run
 **BEFORE RUNNING**
