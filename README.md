@@ -25,7 +25,7 @@
 
 ### Functional Requirements
 **The application provides an user profile functionality that displays the following information:**
-- [ ] The number of collections the user has
+- [X] The number of collections the user has
 
 - [ ] The number of followers
 
