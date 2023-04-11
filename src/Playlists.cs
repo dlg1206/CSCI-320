@@ -7,7 +7,7 @@ class Playlists
     private static void PrintPlaylistCommands()
     {
         Console.WriteLine("===========Playlists===========");
-        Console.WriteLine("Create a playlist:       create");
+        Console.WriteLine("Create a playlist:       create <name>");
         Console.WriteLine("List your playlists:     list");
         Console.WriteLine("View a playlist:         view");
         Console.WriteLine("Listen to a playlist:    listen");
@@ -30,7 +30,9 @@ class Playlists
             {
                 // Create new playlist
                 case "create":
-                    Create(database);
+                    // Use given name or get name if none given
+                    var name = inputArgs.Length < 2 ? Util.GetInput("Playlist Name: ") : inputArgs[1];
+                    Create(database, name);
                     break;
                 
                 // List exising playlists
@@ -78,11 +80,14 @@ class Playlists
     
     // Commands
     
-    private static void Create(NpgsqlConnection database)
+    /// <summary>
+    /// Add new playlist to the database
+    /// </summary>
+    /// <param name="database">database to use</param>
+    /// <param name="playlistName">name of the playlist</param>
+    private static void Create(NpgsqlConnection database, string playlistName)
     {
-        Console.WriteLine("Enter playlist name");
-        var playlistName = Console.ReadLine();
-
+        // add to ddb
         var insert = new NpgsqlCommand("INSERT INTO playlist(userid, creationdate, playlistname) VALUES ($1, $2, $3)", database)
         {
             Parameters = {
@@ -91,7 +96,6 @@ class Playlists
                 new() { Value = playlistName }
             }
         };
-
         insert.Prepare();
         insert.ExecuteNonQuery();
     }

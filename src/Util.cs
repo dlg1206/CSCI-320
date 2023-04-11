@@ -10,6 +10,11 @@ class Util
     {
         return $"{UserName}@{ServerName}:~{dir}$ ";
     }
+
+    public static string ServerMessage(string msg)
+    {
+        return $"[SERVER] | {msg}";
+    }
     public static bool IsValid(string email)
     { 
         string regex = @"^[^@\s]+@[^@\s]+\.(com|net|org|gov)$";
