@@ -42,6 +42,7 @@ public class DBTest
             }
             finally
             {
+                Console.WriteLine("Bye.");
                 conn?.Close();
             }
         }

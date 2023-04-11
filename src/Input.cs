@@ -2,11 +2,21 @@ using Npgsql;
 
 class Input
 {
+    /// <summary>
+    /// Prints command line usages
+    /// </summary>
+    private static void PrintCommands()
+    {
+        Console.WriteLine("Login to Account:    login <username> <password>");
+        Console.WriteLine("Search songs:        search");
+        Console.WriteLine("Exit the System:     exit");
+    }
+    
     // takes the database handle, which is just passed from function to function
     public static void HandleInput(NpgsqlConnection database)
     {
         
-        Console.WriteLine("Possible inputs are: user, search, exit");
+        PrintCommands();
         string? input = Console.ReadLine();
         if (input != null)
         {
