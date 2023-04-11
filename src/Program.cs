@@ -4,6 +4,7 @@ using DotNetEnv;
 
 public class DBTest
 {
+    private static readonly string _logoFile = "src/logo";
     public static void Main(string[] args)
     {
         Env.Load();
@@ -31,6 +32,11 @@ public class DBTest
                 {
                     conn.Open();
                     Console.WriteLine("Connected to DB");
+                    
+                    // attempt to print logo if logo file exists
+                    if(File.Exists(_logoFile))
+                        Console.WriteLine(File.ReadAllText(_logoFile));
+                        
                     Input.HandleInput(conn);
                 }
             }
