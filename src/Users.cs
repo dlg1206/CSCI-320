@@ -14,9 +14,9 @@ class Users
         {
             switch (input.ToLower())
             {
-                case "create account":
-                    CreateAccountPrompt(database);
-                    break;
+                // case "create account":
+                //     CreateUser(database);
+                //     break;
                 case "login":
                     LogIn(database, null, null);
                     break;
@@ -62,35 +62,7 @@ class Users
         }
     }
 
-    private static void CreateAccountPrompt(NpgsqlConnection database)
-    {
-        Console.WriteLine("Enter your email");
-        var email = Console.ReadLine();
-        Console.WriteLine("Enter your username");
-        var username = Console.ReadLine();
-        Console.WriteLine("Enter your first name");
-        var firstName = Console.ReadLine();
-        Console.WriteLine("Enter your last name");
-        var lastName = Console.ReadLine();
-        Console.WriteLine("Enter the year you were born");
-        var dob_year = int.Parse(Console.ReadLine());
-        Console.WriteLine("Enter the month you were born");
-        var dob_month = int.Parse(Console.ReadLine());
-        Console.WriteLine("Enter the day you were born");
-        var dob_day = int.Parse(Console.ReadLine());
-        Console.WriteLine("Enter a password");
-        var password = Console.ReadLine();
-        DateOnly dob = new DateOnly(dob_year, dob_month, dob_day);
-        // ignoring these warnings for velocity sake
-        if (CreateUser(database, email, username, firstName, lastName, dob, password))
-        {
-            Console.WriteLine($"Successfully created new user {username}");
-        }
-        else
-        {
-            Console.WriteLine($"Failed to create user {username}");
-        }
-    }
+   
     
 
     private static User readerToUser(NpgsqlDataReader reader)
@@ -226,57 +198,117 @@ class Users
                 };
                 insert.Prepare();
                 insert.ExecuteNonQuery();
-                Console.WriteLine($"Welcome {username}!");
+                Console.WriteLine($"[SERVER] | Welcome {username}!");
                 return;
             }
         }
         reader.Close();
         Console.WriteLine($"[SERVER] | Incorrect Username or Password, unable to login");
     }
-
-    public static bool CreateUser(NpgsqlConnection database, string email, string username, string firstName, string lastName, DateOnly dob, string password)
+    
+    
+    /// <summary>
+    /// Prompts user for new user details
+    /// </summary>
+    /// <param name="database">database to query</param>
+    public static void CreateAccountPrompt(NpgsqlConnection database)
     {
-
-        // Checking inputs for validity
-        // Checking for valid email
-        if (email.Length > 0 && Util.IsValid(email) && username.Length > 0 && password.Length > 0)
+        // Accept only valid email
+        string email;
+        for (;;)
         {
-            // Checking for unique username
-            var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
-            var reader = cmd.ExecuteReader();
-
-            // Checking for long enough first and last names
-            if (reader.Rows == 0 && firstName.Length > 0 && lastName.Length > 0)
-            {
-                reader.Close();
-                // Checking for long enough password
-                // Hash password here
-                using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
-                {
-                    Parameters =
-                                {
-                                    new() { Value = email },
-                                    new() { Value = username },
-                                    new() { Value = firstName },
-                                    new() { Value = lastName },
-                                    new() { Value = dob },
-                                    new() { Value = DateTime.Now }, // creation date is right now
-                                    new() { Value = DateTime.Now }, // last accessed date is right now
-                                    new() { Value = password }
-                                }
-                };
-                insert.Prepare();
-                var inserted = insert.ExecuteNonQuery();
-
-                if (inserted >= 0)
-                {
-                    reader.Close();
-                    return true;
-                }
-            }
-
-            reader.Close();
+            email = Util.GetInput("Email: ");
+            // break if valid
+            if(Util.IsValid(email))
+                break;
+            Console.WriteLine("[SERVER] | Please enter a valid email");
         }
-        return false;
+        
+    
+        // Accept only unique id
+        string username;
+        for (;;)
+        {
+            username = Util.GetInput("Username: ");
+            // Check if unique
+            if (Util.IsUniqueUsername(database, username))
+                break;
+            Console.WriteLine($"[SERVER] | Sorry, username \"{username}\" is taken, please try again");
+        }
+
+        // Get full name
+        var firstName = Util.GetInput("First Name: ");
+        var lastName = Util.GetInput("Last Name: ");
+        
+        // Accept proper dob string
+        DateOnly dob;
+        for (;;)
+        {
+            var dobInput = Util.GetInput("Date of Birth (MM/DD/YYYY): ");
+            try
+            {
+                var dobParts = dobInput.Split("/");
+                dob = new DateOnly(int.Parse(dobParts[2]), int.Parse(dobParts[1]), int.Parse(dobParts[0]));
+            }
+            catch (Exception e)
+            {
+                // dob failed
+                Console.WriteLine("[SERVER] | Couldn't parse Date of Birth, please format in the following form: (MM/DD/YYYY)");
+                continue;
+            }
+            // dob success
+            break;
+        }
+        var password = Util.GetInput("Password: ");
+        // todo salt immediately
+        
+        // attempt to create user
+        if (CreateUser(database, email, username, firstName, lastName, dob, password))
+            LogIn(database, username, password);    // login on success
+        else
+            Console.WriteLine($"[SERVER] | Failed to create user {username}");  // report failure
+    }
+
+    /// <summary>
+    /// Create new User inside Database
+    /// </summary>
+    /// <param name="database">Database to query</param>
+    /// <param name="email">User's email</param>
+    /// <param name="username">User's unique username</param>
+    /// <param name="firstName">User's first name</param>
+    /// <param name="lastName">User's last name</param>
+    /// <param name="dob">User's date of birth</param>
+    /// <param name="password">User's hashed and salted password</param>
+    /// <returns>true if succeed, false otherwise</returns>
+    private static bool CreateUser(NpgsqlConnection database, string email, string username, string firstName, string lastName, DateOnly dob, string password)
+    {
+        // quick validate args
+        if (email.Length <= 0 || 
+            !Util.IsValid(email) || 
+            username.Length <= 0 || 
+            password.Length <= 0 ||
+            firstName.Length <= 0 ||
+            lastName.Length <= 0 ||
+            !Util.IsUniqueUsername(database, username)) 
+            return false;
+        
+        // Args are valid, insert into table
+        using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
+        {
+            Parameters =
+            {
+                new() { Value = email },
+                new() { Value = username },
+                new() { Value = firstName },
+                new() { Value = lastName },
+                new() { Value = dob },
+                new() { Value = DateTime.Now }, // creation date is right now
+                new() { Value = DateTime.Now }, // last accessed date is right now
+                new() { Value = password }
+            }
+        };
+        insert.Prepare();
+        var inserted = insert.ExecuteNonQuery();
+        return inserted >= 0;   // success if added
     }
 }

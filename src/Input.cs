@@ -9,6 +9,7 @@ class Input
     private static void PrintCommands()
     {
         Console.WriteLine("Login to Account:    login <username> <password>");
+        Console.WriteLine("Create new Account:  new");
         Console.WriteLine("Search songs:        search");
         Console.WriteLine("Exit the System:     exit");
     }
@@ -40,6 +41,9 @@ class Input
                 // Search
                 case "search":
                     Search.HandleInput(database);
+                    break;
+                case "new":
+                    Users.CreateAccountPrompt(database);
                     break;
                 case "help":
                     PrintCommands();
