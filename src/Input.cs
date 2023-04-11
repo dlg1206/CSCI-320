@@ -8,7 +8,7 @@ class Input
     /// </summary>
     private static void PrintCommands()
     {
-        Console.WriteLine("Login to Account:    login <username> <password>");
+        Console.WriteLine("Login to Account:    login");
         Console.WriteLine("Create new Account:  new");
         Console.WriteLine("Search songs:        search");
         Console.WriteLine("Exit the System:     exit");
@@ -32,18 +32,14 @@ class Input
             {
                 // Attempt login to account
                 case "login":
-                    // login with username and password if given, else use login prompt
-                    if (inputArgs.Length == 3) 
-                        Users.LogIn(database, inputArgs[1], inputArgs[2]);
-                    else 
-                        Users.LogIn(database, null, null);
+                    Users.LogInPrompt(database);
                     break;
                 // Search
                 case "search":
                     Search.HandleInput(database);
                     break;
                 case "new":
-                    Users.CreateAccountPrompt(database);
+                    Users.CreateUserPrompt(database);
                     break;
                 case "help":
                     PrintCommands();
@@ -79,13 +75,13 @@ class Input
             switch (inputArgs[0].ToLower())
             {
                 // Attempt login to account
-                case "login":
-                    // login with username and password if given, else use login prompt
-                    if (inputArgs.Length == 3) 
-                        Users.LogIn(database, inputArgs[1], inputArgs[2]);
-                    else 
-                        Users.LogIn(database, null, null);
-                    break;
+                // case "login":
+                //     // login with username and password if given, else use login prompt
+                //     if (inputArgs.Length == 3) 
+                //         Users.LogIn(database, inputArgs[1], inputArgs[2]);
+                //     else 
+                //         Users.LogIn(database, null, null);
+                //     break;
                 // Search
                 case "search":
                     Search.HandleInput(database);
