@@ -17,31 +17,32 @@ class Input
     {
         
         PrintCommands();
-        string? input = Console.ReadLine();
-        if (input != null)
+        Console.Write("$ ");
+        var input = Console.ReadLine();
+        while (input != null)
         {
-            switch (input.ToLower())
+            // Switch on keyword
+            switch (input.Split(" ")[0].ToLower())
             {
-                case "user":
+                // Attempt login to account
+                case "login":
                     Users.HandleInput(database);
-                    HandleInput(database);
                     break;
+                // Search
                 case "search":
                     Search.HandleInput(database);
-                    HandleInput(database);
                     break;
+                // Exit
                 case "exit":
-                    break;
+                    return;
+                // Unknown command
                 default:
-                    Console.WriteLine("Not a valid input");
-                    HandleInput(database);
+                    Console.WriteLine("[SERVER] | \"" + input.Split(" ")[0] + "\" is not a valid input");
                     break;
             }
-        }
-        else
-        {
-            Console.WriteLine("null input, please retry");
-            HandleInput(database);
+            // get next input
+            Console.Write("$");
+            input = Console.ReadLine();
         }
 
     }
