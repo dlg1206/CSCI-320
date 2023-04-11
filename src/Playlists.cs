@@ -17,7 +17,7 @@ class Playlists
         Console.WriteLine("Show this Menu:          help");
         Console.WriteLine("Back to Home:            back");
     }
-  
+
 
     public static void HandleInput(NpgsqlConnection database)
     {
@@ -31,8 +31,9 @@ class Playlists
                 // Create new playlist
                 case "create":
                     // Use given name or get name if none given
-                    var name = inputArgs.Length < 2 ? Util.GetInput("Playlist Name: ") : inputArgs[1];
+                    var name = inputArgs.Length < 2 ? Util.GetInput("Playlist Name: ") : inputArgs[1]
                     Create(database, name);
+                    HandleEditInput(database, name);    // launch editor
                     break;
                 
                 // List exising playlists
@@ -42,12 +43,16 @@ class Playlists
                 
                 // View a given playlist
                 case "view":
-                    Info(database);
+                    Info(database, 
+                        inputArgs.Length < 2 ? Util.GetInput("Playlist Name: ") : inputArgs[1]
+                    );
                     break;
                 
                 // listen to a given playlist
                 case "listen":
-                    ListenTo(database);
+                    ListenTo(database, 
+                        inputArgs.Length < 2 ? Util.GetInput("Playlist Name: ") : inputArgs[1]
+                        );
                     break;
                 
                 // Rename a given playlist
@@ -57,7 +62,9 @@ class Playlists
                 
                 // Edit a given playlist
                 case "edit":
-                    HandleEditInput(database);
+                    HandleEditInput(database,
+                        inputArgs.Length < 2 ? Util.GetInput("Playlist Name: ") : inputArgs[1]
+                    );
                     break;
                 
                 // Delete a given playlist
@@ -106,21 +113,21 @@ class Playlists
         Console.WriteLine($"\nPlaylists: ");
         foreach (var playlist in playlists)
         {
-            (var duration, var numSongs) = GetDurationAndNumSongs(database, playlist.playlistid);
+            var (duration, numSongs) = GetDurationAndNumSongs(database, playlist.playlistid);
             Console.WriteLine($"\tPlaylist: {playlist.playlistname}, Duration: {duration / 60} minutes, Number of Songs: {numSongs}");
         }
     }
 
-    private static void Info(NpgsqlConnection database)
+    private static void Info(NpgsqlConnection database, string playlistName)
     {
-        int? playlistid = GetPlaylist(database);
+        int? playlistid = GetPlaylist(database, playlistName);
         if (playlistid == null) return;
-        DisplayPlaylist(database, (int)playlistid);
+        DisplayPlaylist(database, (int) playlistid);
     }
     
-    private static void ListenTo(NpgsqlConnection database)
+    private static void ListenTo(NpgsqlConnection database, string playlistName)
     {
-        int? playlistid = GetPlaylist(database);
+        int? playlistid = GetPlaylist(database, playlistName);
         if (playlistid == null) return;
         var songs = GetSongs(database, (int)playlistid);
         if (songs.Count == 0) return;
@@ -143,15 +150,15 @@ class Playlists
         update.ExecuteNonQuery();
     }
     
-    private static void HandleEditInput(NpgsqlConnection database)
+    private static void HandleEditInput(NpgsqlConnection database, string playlistName)
     {
-        int? playlistId = GetPlaylist(database);
+        var playlistId = GetPlaylist(database, playlistName);
         if (playlistId == null) return;
         while (true)
         {
-            DisplayPlaylist(database, (int)playlistId);
-            Console.WriteLine("Playlist edit possibilities: back, add, remove, add album");
-            string? input = Console.ReadLine();
+            DisplayPlaylist(database, (int) playlistId);
+            Console.WriteLine("Options: done, add, remove, add album");
+            var input = Util.GetInput(Util.GetServerPrompt("[Playlist Builder]"));
             switch (input)
             {
                 case "add":
@@ -163,11 +170,9 @@ class Playlists
                 case "add album":
                     InsertAlbum(database, (int)playlistId);
                     break;
-                case "back":
+                case "done":
+                    Util.ServerMessage("Playlist Saved!");
                     return;
-                default:
-                    Console.WriteLine("Unknown command, try again");
-                    break;
             }
         }
     }
@@ -204,28 +209,17 @@ class Playlists
     }
     
 
-    private static int? GetPlaylist(NpgsqlConnection database)
+    private static int? GetPlaylist(NpgsqlConnection database, string playlistName)
     {
-        Playlists.ListPlaylists(database);
-        Console.WriteLine("Enter a playlist name");
-        while (true)
-        {
-            var playlistName = Console.ReadLine();
-            if (playlistName == "back")
-            {
-                return null;
-            }
-            var cmd = new NpgsqlCommand($"SELECT playlistid FROM playlist WHERE playlistname='{playlistName}' AND userid={Users.LoggedInUser!.userid}", database);
-            var reader = cmd.ExecuteReader();
-            if (reader.Read())
-            {
-                var id = (int)reader["playlistId"];
-                reader.Close();
-                return id;
-            }
-            reader.Close();
-            Console.WriteLine("Couldn't find that playlist, try again or back");
-        }
+        int? id = null;
+        var cmd = new NpgsqlCommand($"SELECT playlistid FROM playlist WHERE playlistname='{playlistName}' AND userid={Users.LoggedInUser!.userid}", database);
+        var reader = cmd.ExecuteReader();
+        if (reader.Read())
+            id = (int) reader["playlistId"];
+        else
+            Util.ServerMessage($"Couldn't find playlist {playlistName}");
+        reader.Close();
+        return id;
     }
 
     
