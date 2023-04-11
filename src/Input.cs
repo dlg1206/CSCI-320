@@ -2,8 +2,7 @@ using Npgsql;
 
 class Input
 {
-    private static string _userName = "guest";
-    private const string ServerName = "@spotify2$ ";
+
     /// <summary>
     /// Prints command line usages for guest
     /// </summary>
@@ -13,6 +12,7 @@ class Input
         Console.WriteLine("Login to Account:    login");
         Console.WriteLine("Create new Account:  new");
         Console.WriteLine("Search all songs:    search");
+        Console.WriteLine("Show this Menu:      help");
         Console.WriteLine("Exit the System:     exit");
     }
     
@@ -44,7 +44,7 @@ class Input
         PrintGuestCommands();   // print guest commands on launch
         for (;;)
         {
-            var input = Util.GetInput(_userName + ServerName);
+            var input = Util.GetInput(Util.GetServerPrompt());
             var inputArgs = input.Split(" ");
             // Switch on keyword
             switch (inputArgs[0].ToLower())
@@ -57,7 +57,7 @@ class Input
                     // on success, switch to user commands
                     if (Users.HandleInput(database, inputArgs) && Users.LoggedInUser != null)
                     {
-                        _userName = Users.LoggedInUser.username;
+                        Util.UserName = Users.LoggedInUser.username;
                         PrintUserCommands();
                     }
                     break;

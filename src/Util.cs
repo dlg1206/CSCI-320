@@ -3,6 +3,13 @@ using Npgsql;
 
 class Util
 {
+    public const string ServerName = "spotify2";
+    public static string UserName { get; set; } = "guest";
+
+    public static string GetServerPrompt(string dir="")
+    {
+        return $"{UserName}@{ServerName}:~{dir}$ ";
+    }
     public static bool IsValid(string email)
     { 
         string regex = @"^[^@\s]+@[^@\s]+\.(com|net|org|gov)$";
