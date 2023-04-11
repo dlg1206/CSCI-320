@@ -164,22 +164,26 @@ class Users
     }
 
     /// <summary>
+    /// Prompts user for login details
+    /// </summary>
+    /// <param name="database">database to log into</param>
+    public static void LogInPrompt(NpgsqlConnection database)
+    {
+        var username = Util.GetInput("Username: ");
+        var password = Util.GetInput("Password: ");
+        // todo hash password asap
+        LogIn(database, username, password);
+    }
+
+    /// <summary>
     /// Login to the Database
     /// </summary>
     /// <param name="database">database to log into</param>
     /// <param name="username">Username to login</param>
     /// <param name="password">Password to login</param>
-    public static void LogIn(NpgsqlConnection database, string? username, string? password)
+    private static void LogIn(NpgsqlConnection database, string username, string password)
     {
-        // Login prompt if username or password is null
-        if (username == null || password == null)
-        {
-            Console.Write("Username: ");
-            username = Console.ReadLine();
-            Console.Write("Password: ");
-            password = Console.ReadLine();
-        }
-        
+       
         // Get user from DB
         var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
         var reader = cmd.ExecuteReader();
@@ -211,7 +215,7 @@ class Users
     /// Prompts user for new user details
     /// </summary>
     /// <param name="database">database to query</param>
-    public static void CreateAccountPrompt(NpgsqlConnection database)
+    public static void CreateUserPrompt(NpgsqlConnection database)
     {
         // Accept only valid email
         string email;
