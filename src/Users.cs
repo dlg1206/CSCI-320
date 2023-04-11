@@ -18,7 +18,7 @@ class Users
                     CreateAccountPrompt(database);
                     break;
                 case "login":
-                    LoginPrompt(database);
+                    LogIn(database, null, null);
                     break;
                 case "songs":
                     if (LoggedInUser != null)
@@ -91,27 +91,7 @@ class Users
             Console.WriteLine($"Failed to create user {username}");
         }
     }
-
-    /// <summary>
-    /// Prompt User for login credentials 
-    /// </summary>
-    /// <param name="database">Database to attempt to access</param>
-    public static void LoginPrompt(NpgsqlConnection database)
-    {
-        Console.Write("Username: ");
-        var username = Console.ReadLine();
-        Console.Write("Password: ");
-        var password = Console.ReadLine();
-        
-        if (LogIn(database, username, password))
-        {
-            Console.WriteLine($"Welcome {username}!");
-        }
-        else
-        {
-            Console.WriteLine($"[SERVER] | Failed to log in as {username}");
-        }
-    }
+    
 
     private static User readerToUser(NpgsqlDataReader reader)
     {
@@ -211,8 +191,24 @@ class Users
         return null;
     }
 
-    public static bool LogIn(NpgsqlConnection database, string username, string password)
+    /// <summary>
+    /// Login to the Database
+    /// </summary>
+    /// <param name="database">database to log into</param>
+    /// <param name="username">Username to login</param>
+    /// <param name="password">Password to login</param>
+    public static void LogIn(NpgsqlConnection database, string? username, string? password)
     {
+        // Login prompt if username or password is null
+        if (username == null || password == null)
+        {
+            Console.Write("Username: ");
+            username = Console.ReadLine();
+            Console.Write("Password: ");
+            password = Console.ReadLine();
+        }
+        
+        // Get user from DB
         var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
         var reader = cmd.ExecuteReader();
         while (reader.Read())
@@ -230,14 +226,12 @@ class Users
                 };
                 insert.Prepare();
                 insert.ExecuteNonQuery();
-
-                return true;
+                Console.WriteLine($"Welcome {username}!");
+                return;
             }
         }
-
         reader.Close();
-
-        return false;
+        Console.WriteLine($"[SERVER] | Incorrect Username or Password, unable to login");
     }
 
     public static bool CreateUser(NpgsqlConnection database, string email, string username, string firstName, string lastName, DateOnly dob, string password)
