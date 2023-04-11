@@ -6,60 +6,27 @@ class Users
 {
     public static User? LoggedInUser { get; private set; } = null;
 
-    public static void HandleInput(NpgsqlConnection database)
+    public static bool HandleInput(NpgsqlConnection database, string[] args)
     {
-        Console.WriteLine("User input possibilities: create account, songs, friends, follow, unfollow, playlists, login");
-        string? input = Console.ReadLine();
-        if (input != null)
+        // switch through keywords
+        switch (args[0].ToLower())
         {
-            switch (input.ToLower())
-            {
-                // case "create account":
-                //     CreateUser(database);
-                //     break;
-                case "login":
-                    LogIn(database, null, null);
-                    break;
-                case "songs":
-                    if (LoggedInUser != null)
-                    {
-                        Songs.HandleInput(database);
-                    }
-                    else
-                    {
-                        Console.WriteLine("You are not logged in");
-                    }
-                    break;
-                case "playlists":
-                    if (LoggedInUser != null)
-                    {
-                        Playlists.HandleInput(database);
-                    }
-                    else
-                    {
-                        Console.WriteLine("You are not logged in");
-                    }
-                    break;
-                case "friends":
-                    ListFriends(database);
-                    break;
-                case "follow":
-                    HandleFriend(database, true);
-                    break;
-                case "unfollow":
-                    HandleFriend(database, false);
-                    break;
-                default:
-                    Console.WriteLine("Not an input");
-                    HandleInput(database);
-                    break;
-            }
+            case "login":
+                return LogInPrompt(database);
+            case "new":
+                return CreateUserPrompt(database);
+            case "friends":
+                ListFriends(database);
+                break;
+            case "follow":
+                HandleFriend(database, true);
+                break;
+            case "unfollow":
+                HandleFriend(database, false);
+                break;
         }
-        else
-        {
-            Console.WriteLine("null input, please retry");
-            HandleInput(database);
-        }
+        // unknown arg
+        return false;
     }
 
    
@@ -167,12 +134,17 @@ class Users
     /// Prompts user for login details
     /// </summary>
     /// <param name="database">database to log into</param>
-    public static void LogInPrompt(NpgsqlConnection database)
+    private static bool LogInPrompt(NpgsqlConnection database)
     {
         var username = Util.GetInput("Username: ");
         var password = Util.GetInput("Password: ");
         // todo hash password asap
-        LogIn(database, username, password);
+        // report success
+        var loginSuccess = LogIn(database, username, password);
+        Console.WriteLine(loginSuccess
+            ? $"[SERVER] | Welcome {username}!"
+            : "[SERVER] | Incorrect Username or Password, unable to login");
+        return loginSuccess;
     }
 
     /// <summary>
@@ -181,33 +153,33 @@ class Users
     /// <param name="database">database to log into</param>
     /// <param name="username">Username to login</param>
     /// <param name="password">Password to login</param>
-    private static void LogIn(NpgsqlConnection database, string username, string password)
+    private static bool LogIn(NpgsqlConnection database, string username, string password)
     {
-       
         // Get user from DB
         var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
         var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            if ((string)reader["password"] == password)
+            // break if password bad
+            // todo number of password attempts?
+            if ((string) reader["password"] != password) break;
+            
+            LoggedInUser = readerToUser(reader);
+            reader.Close();
+            // update last accessed
+            using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)
             {
-                LoggedInUser = readerToUser(reader);
-                reader.Close();
-
-                using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)
-                {
-                    Parameters = {
-                        new() { Value = DateTime.Now },
-                    }
-                };
-                insert.Prepare();
-                insert.ExecuteNonQuery();
-                Console.WriteLine($"[SERVER] | Welcome {username}!");
-                return;
-            }
+                Parameters = {
+                    new() { Value = DateTime.Now },
+                }
+            };
+            insert.Prepare();
+            insert.ExecuteNonQuery();
+            return true;
         }
+        // username is bad
         reader.Close();
-        Console.WriteLine($"[SERVER] | Incorrect Username or Password, unable to login");
+        return false;
     }
     
     
@@ -215,7 +187,7 @@ class Users
     /// Prompts user for new user details
     /// </summary>
     /// <param name="database">database to query</param>
-    public static void CreateUserPrompt(NpgsqlConnection database)
+    private static bool CreateUserPrompt(NpgsqlConnection database)
     {
         // Accept only valid email
         string email;
@@ -268,9 +240,12 @@ class Users
         
         // attempt to create user
         if (CreateUser(database, email, username, firstName, lastName, dob, password))
-            LogIn(database, username, password);    // login on success
-        else
-            Console.WriteLine($"[SERVER] | Failed to create user {username}");  // report failure
+            return LogIn(database, username, password);     // attempt login on success
+        
+        // else report failure
+        Console.WriteLine($"[SERVER] | Failed to create user {username}");  
+        return false;
+        
     }
 
     /// <summary>

@@ -2,102 +2,113 @@ using Npgsql;
 
 class Input
 {
-    private static string _serverPrefix = "guest@spotify2$ ";
+    private static string _userName = "guest";
+    private const string ServerName = "@spotify2$ ";
     /// <summary>
-    /// Prints command line usages
+    /// Prints command line usages for guest
     /// </summary>
-    private static void PrintCommands()
+    private static void PrintGuestCommands()
     {
+        Console.WriteLine("=========Options==========");
         Console.WriteLine("Login to Account:    login");
         Console.WriteLine("Create new Account:  new");
-        Console.WriteLine("Search songs:        search");
+        Console.WriteLine("Search all songs:    search");
         Console.WriteLine("Exit the System:     exit");
     }
+    
+    /// <summary>
+    /// Prints command line usages for user
+    /// </summary>
+    private static void PrintUserCommands()
+    {
+        Console.WriteLine("=================Friends=================");
+        Console.WriteLine("List your friends:       friends");
+        Console.WriteLine("Follow a User:           follow <email>");
+        Console.WriteLine("Unfollow a User:         unfollow <email>");
+        Console.WriteLine("==================Songs==================");
+        Console.WriteLine("Search all songs:        search");
+        Console.WriteLine("Access your songs:       songs");
+        Console.WriteLine("Access your playlists:   playlists");
+        Console.WriteLine("=================Account=================");
+        Console.WriteLine("Logout of Account:       logout");
+        Console.WriteLine("Exit the System:         exit");
+    }
+    
     
     /// <summary>
     /// Handles inputs from guest, or user that isn't logged in
     /// </summary>
     /// <param name="database">Database to access</param>
-    public static void HandleInputGuest(NpgsqlConnection database)
+    public static void HandleInput(NpgsqlConnection database)
     {
-        
-        PrintCommands();
-        Console.Write(_serverPrefix);
-        var input = Console.ReadLine();
-        while (input != null)
+        PrintGuestCommands();   // print guest commands on launch
+        for (;;)
         {
+            var input = Util.GetInput(_userName + ServerName);
             var inputArgs = input.Split(" ");
             // Switch on keyword
             switch (inputArgs[0].ToLower())
             {
                 // Attempt login to account
                 case "login":
-                    Users.LogInPrompt(database);
+                    // can't log into someone else's account while logged in
+                    if(Users.LoggedInUser != null)
+                        break;
+                    // on success, switch to user commands
+                    if (Users.HandleInput(database, inputArgs) && Users.LoggedInUser != null)
+                    {
+                        _userName = Users.LoggedInUser.username;
+                        PrintUserCommands();
+                    }
                     break;
+                
+                
                 // Search
                 case "search":
                     Search.HandleInput(database);
                     break;
-                case "new":
-                    Users.CreateUserPrompt(database);
-                    break;
+                
+                // Display commands
                 case "help":
-                    PrintCommands();
+                    // get correct help menu
+                    if (Users.LoggedInUser == null)
+                        PrintGuestCommands();
+                    else 
+                        PrintUserCommands();
                     break;
+                
+                // User commands
+                
+                case "friends": // list friends
+                case "new":     // new user
+                    if(Users.LoggedInUser != null)
+                        break;
+                    Users.HandleInput(database, inputArgs);
+                    break;
+    
+                case "follow":      // follow user
+                case "unfollow":    // unfollow user
+                    if (Users.LoggedInUser != null)
+                        Users.HandleInput(database, inputArgs);
+                    break;
+                
+                // Access Songs
+                case "songs":
+                    if (Users.LoggedInUser != null)
+                        Songs.HandleInput(database);
+                    break;
+                
+                // Access playlists
+                case "playlists":
+                    if (Users.LoggedInUser != null)
+                        Playlists.HandleInput(database);
+                    break;
+                
                 // Exit
                 case "exit":
                     return;
-                // Unknown command
-                default:
-                    Console.WriteLine("[SERVER] | \"" + input.Split(" ")[0] + "\" is not a valid input");
-                    break;
             }
-            // get next input
-            Console.Write(_serverPrefix);
-            input = Console.ReadLine();
         }
     }
     
-    /// <summary>
-    /// Handles prompts from User who is logged in
-    /// </summary>
-    /// <param name="database">database to access</param>
-    public static void HandleInputUser(NpgsqlConnection database)
-    {
-
-        PrintCommands();
-        Console.Write("$ ");
-        var input = Console.ReadLine();
-        while (input != null)
-        {
-            var inputArgs = input.Split(" ");
-            // Switch on keyword
-            switch (inputArgs[0].ToLower())
-            {
-                // Attempt login to account
-                // case "login":
-                //     // login with username and password if given, else use login prompt
-                //     if (inputArgs.Length == 3) 
-                //         Users.LogIn(database, inputArgs[1], inputArgs[2]);
-                //     else 
-                //         Users.LogIn(database, null, null);
-                //     break;
-                // Search
-                case "search":
-                    Search.HandleInput(database);
-                    break;
-                // Exit
-                case "exit":
-                    return;
-                // Unknown command
-                default:
-                    Console.WriteLine("[SERVER] | \"" + inputArgs[0] + "\" is not a valid input");
-                    break;
-            }
-
-            // get next input
-            Console.Write("$");
-            input = Console.ReadLine();
-        }
-    }
 }
