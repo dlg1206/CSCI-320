@@ -6,6 +6,12 @@ class Users
 {
     public static User? LoggedInUser { get; private set; } = null;
 
+    /// <summary>
+    /// Handles commands for User
+    /// </summary>
+    /// <param name="database">database to use</param>
+    /// <param name="args">cli args</param>
+    /// <returns>true if successful</returns>
     public static bool HandleInput(NpgsqlConnection database, string[] args)
     {
         // switch through keywords
@@ -29,9 +35,7 @@ class Users
         return false;
     }
 
-   
     
-
     private static User readerToUser(NpgsqlDataReader reader)
     {
         return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
