@@ -2,6 +2,7 @@ using Npgsql;
 
 class Input
 {
+    private static string _serverPrefix = "guest@spotify2$ ";
     /// <summary>
     /// Prints command line usages
     /// </summary>
@@ -12,25 +13,36 @@ class Input
         Console.WriteLine("Exit the System:     exit");
     }
     
-    // takes the database handle, which is just passed from function to function
-    public static void HandleInput(NpgsqlConnection database)
+    /// <summary>
+    /// Handles inputs from guest, or user that isn't logged in
+    /// </summary>
+    /// <param name="database">Database to access</param>
+    public static void HandleInputGuest(NpgsqlConnection database)
     {
         
         PrintCommands();
-        Console.Write("$ ");
+        Console.Write(_serverPrefix);
         var input = Console.ReadLine();
         while (input != null)
         {
+            var inputArgs = input.Split(" ");
             // Switch on keyword
-            switch (input.Split(" ")[0].ToLower())
+            switch (inputArgs[0].ToLower())
             {
                 // Attempt login to account
                 case "login":
-                    Users.HandleInput(database);
+                    // login with username and password if given, else use login prompt
+                    if (inputArgs.Length == 3) 
+                        Users.LogIn(database, inputArgs[1], inputArgs[2]);
+                    else 
+                        Users.LoginPrompt(database);
                     break;
                 // Search
                 case "search":
                     Search.HandleInput(database);
+                    break;
+                case "help":
+                    PrintCommands();
                     break;
                 // Exit
                 case "exit":
@@ -41,9 +53,51 @@ class Input
                     break;
             }
             // get next input
+            Console.Write(_serverPrefix);
+            input = Console.ReadLine();
+        }
+    }
+    
+    /// <summary>
+    /// Handles prompts from User who is logged in
+    /// </summary>
+    /// <param name="database">database to access</param>
+    public static void HandleInputUser(NpgsqlConnection database)
+    {
+
+        PrintCommands();
+        Console.Write("$ ");
+        var input = Console.ReadLine();
+        while (input != null)
+        {
+            var inputArgs = input.Split(" ");
+            // Switch on keyword
+            switch (inputArgs[0].ToLower())
+            {
+                // Attempt login to account
+                case "login":
+                    // login with username and password if given, else use login prompt
+                    if (inputArgs.Length == 3) 
+                        Users.LogIn(database, inputArgs[1], inputArgs[2]);
+                    else 
+                        Users.LoginPrompt(database);
+                    break;
+                // Search
+                case "search":
+                    Search.HandleInput(database);
+                    break;
+                // Exit
+                case "exit":
+                    return;
+                // Unknown command
+                default:
+                    Console.WriteLine("[SERVER] | \"" + inputArgs[0] + "\" is not a valid input");
+                    break;
+            }
+
+            // get next input
             Console.Write("$");
             input = Console.ReadLine();
         }
-
     }
 }

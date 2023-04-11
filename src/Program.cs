@@ -37,7 +37,7 @@ public class DBTest
                     if(File.Exists(_logoFile))
                         Console.WriteLine(File.ReadAllText(_logoFile));
                         
-                    Input.HandleInput(conn);
+                    Input.HandleInputGuest(conn);
                 }
             }
             finally

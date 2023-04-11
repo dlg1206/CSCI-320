@@ -94,19 +94,24 @@ class Users
         }
     }
 
-    private static void LoginPrompt(NpgsqlConnection database)
+    /// <summary>
+    /// Prompt User for login credentials 
+    /// </summary>
+    /// <param name="database">Database to attempt to access</param>
+    public static void LoginPrompt(NpgsqlConnection database)
     {
-        Console.WriteLine("Enter your username");
+        Console.Write("Username: ");
         var username = Console.ReadLine();
-        Console.WriteLine("Enter your password");
+        Console.Write("Password: ");
         var password = Console.ReadLine();
+        
         if (LogIn(database, username, password))
         {
-            Console.WriteLine($"Logged in as {username}");
+            Console.WriteLine($"Welcome {username}!");
         }
         else
         {
-            Console.WriteLine($"Failed to log in as {username}");
+            Console.WriteLine($"[SERVER] | Failed to log in as {username}");
         }
     }
 
