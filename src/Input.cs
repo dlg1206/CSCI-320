@@ -5,6 +5,7 @@ class Input
     // takes the database handle, which is just passed from function to function
     public static void HandleInput(NpgsqlConnection database)
     {
+        
         Console.WriteLine("Possible inputs are: user, search, exit");
         string? input = Console.ReadLine();
         if (input != null)
