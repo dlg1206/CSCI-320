@@ -35,7 +35,7 @@ class Input
                     if (inputArgs.Length == 3) 
                         Users.LogIn(database, inputArgs[1], inputArgs[2]);
                     else 
-                        Users.LoginPrompt(database);
+                        Users.LogIn(database, null, null);
                     break;
                 // Search
                 case "search":
@@ -80,7 +80,7 @@ class Input
                     if (inputArgs.Length == 3) 
                         Users.LogIn(database, inputArgs[1], inputArgs[2]);
                     else 
-                        Users.LoginPrompt(database);
+                        Users.LogIn(database, null, null);
                     break;
                 // Search
                 case "search":
