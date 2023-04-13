@@ -6,7 +6,7 @@ class Playlists
 {
     private static void PrintPlaylistCommands()
     {
-        Console.WriteLine("===========Playlists===========");
+        Console.WriteLine("==============Playlists===============");
         Console.WriteLine("Create a playlist:       create <name>");
         Console.WriteLine("List your playlists:     list");
         Console.WriteLine("View a playlist:         view <name>");
