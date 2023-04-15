@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Npgsql;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
@@ -205,6 +207,35 @@ class Users
         reader.Close();
         return null;
     }
+    
+    /// <summary>
+    /// Create a SHA256 hash of a given password using a SALT
+    /// </summary>
+    /// <param name="password">Password to salt and hash</param>
+    /// <param name="username">unique id to use for salt</param>
+    /// <returns>SHA256 string of salted password</returns>
+    private static string toSaltedHash(string password, string username)
+    {
+        // salt w/ username since unique
+        var salt = "thereisasus" + username + "amongus";
+        
+        // Semi randomly break apart password and insert a salt character
+        foreach (var c in salt)
+        {
+            var insertIndex = c % password.Length;
+            // Break into 2 sides
+            var left = password.Substring(0, insertIndex);
+            var right = password.Substring(insertIndex, password.Length - insertIndex);
+            
+            // update password
+            password = left + c + right;
+        }
+        // hash salted password
+        using var hash = SHA256.Create();
+        var byteArray = hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+        // return SHA256 string
+        return Convert.ToHexString(byteArray);
+    }
 
     public static bool LogIn(NpgsqlConnection database, string username, string password)
     {
@@ -212,7 +243,8 @@ class Users
         var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            if ((string)reader["password"] == password)
+            // convert to salted hash and then compare
+            if ((string)reader["password"] == toSaltedHash(password, username))
             {
                 LoggedInUser = readerToUser(reader);
                 reader.Close();
@@ -251,7 +283,10 @@ class Users
             {
                 reader.Close();
                 // Checking for long enough password
-                // Hash password here
+                
+                // SALT and Hash password
+                password = toSaltedHash(password, username);
+
                 using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
                 {
                     Parameters =
