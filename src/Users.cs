@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Npgsql;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
@@ -8,108 +6,36 @@ class Users
 {
     public static User? LoggedInUser { get; private set; } = null;
 
-    public static void HandleInput(NpgsqlConnection database)
+    /// <summary>
+    /// Handles commands for User
+    /// </summary>
+    /// <param name="database">database to use</param>
+    /// <param name="args">cli args</param>
+    /// <returns>true if successful</returns>
+    public static bool HandleInput(NpgsqlConnection database, string[] args)
     {
-        Console.WriteLine("User input possibilities: create account, songs, friends, follow, unfollow, playlists, login");
-        string? input = Console.ReadLine();
-        if (input != null)
+        // switch through keywords
+        switch (args[0].ToLower())
         {
-            switch (input.ToLower())
-            {
-                case "create account":
-                    CreateAccountPrompt(database);
-                    break;
-                case "login":
-                    LoginPrompt(database);
-                    break;
-                case "songs":
-                    if (LoggedInUser != null)
-                    {
-                        Songs.HandleInput(database);
-                    }
-                    else
-                    {
-                        Console.WriteLine("You are not logged in");
-                    }
-                    break;
-                case "playlists":
-                    if (LoggedInUser != null)
-                    {
-                        Playlists.HandleInput(database);
-                    }
-                    else
-                    {
-                        Console.WriteLine("You are not logged in");
-                    }
-                    break;
-                case "friends":
-                    ListFriends(database);
-                    break;
-                case "follow":
-                    HandleFriend(database, true);
-                    break;
-                case "unfollow":
-                    HandleFriend(database, false);
-                    break;
-                default:
-                    Console.WriteLine("Not an input");
-                    HandleInput(database);
-                    break;
-            }
+            case "login":
+                return LogInPrompt(database);
+            case "new":
+                return CreateUserPrompt(database);
+            case "friends":
+                ListFriends(database);
+                break;
+            case "follow":
+                HandleFriend(database, true);
+                break;
+            case "unfollow":
+                HandleFriend(database, false);
+                break;
         }
-        else
-        {
-            Console.WriteLine("null input, please retry");
-            HandleInput(database);
-        }
+        // unknown arg
+        return false;
     }
 
-    private static void CreateAccountPrompt(NpgsqlConnection database)
-    {
-        Console.WriteLine("Enter your email");
-        var email = Console.ReadLine();
-        Console.WriteLine("Enter your username");
-        var username = Console.ReadLine();
-        Console.WriteLine("Enter your first name");
-        var firstName = Console.ReadLine();
-        Console.WriteLine("Enter your last name");
-        var lastName = Console.ReadLine();
-        Console.WriteLine("Enter the year you were born");
-        var dob_year = int.Parse(Console.ReadLine());
-        Console.WriteLine("Enter the month you were born");
-        var dob_month = int.Parse(Console.ReadLine());
-        Console.WriteLine("Enter the day you were born");
-        var dob_day = int.Parse(Console.ReadLine());
-        Console.WriteLine("Enter a password");
-        var password = Console.ReadLine();
-        DateOnly dob = new DateOnly(dob_year, dob_month, dob_day);
-        // ignoring these warnings for velocity sake
-        if (CreateUser(database, email, username, firstName, lastName, dob, password))
-        {
-            Console.WriteLine($"Successfully created new user {username}");
-        }
-        else
-        {
-            Console.WriteLine($"Failed to create user {username}");
-        }
-    }
-
-    private static void LoginPrompt(NpgsqlConnection database)
-    {
-        Console.WriteLine("Enter your username");
-        var username = Console.ReadLine();
-        Console.WriteLine("Enter your password");
-        var password = Console.ReadLine();
-        if (LogIn(database, username, password))
-        {
-            Console.WriteLine($"Logged in as {username}");
-        }
-        else
-        {
-            Console.WriteLine($"Failed to log in as {username}");
-        }
-    }
-
+    
     private static User readerToUser(NpgsqlDataReader reader)
     {
         return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
@@ -207,112 +133,165 @@ class Users
         reader.Close();
         return null;
     }
-    
+
     /// <summary>
-    /// Create a SHA256 hash of a given password using a SALT
+    /// Prompts user for login details
     /// </summary>
-    /// <param name="password">Password to salt and hash</param>
-    /// <param name="username">unique id to use for salt</param>
-    /// <returns>SHA256 string of salted password</returns>
-    private static string toSaltedHash(string password, string username)
+    /// <param name="database">database to log into</param>
+    private static bool LogInPrompt(NpgsqlConnection database)
     {
-        // salt w/ username since unique
-        var salt = "thereisasus" + username + "amongus";
-        
-        // Semi randomly break apart password and insert a salt character
-        foreach (var c in salt)
-        {
-            var insertIndex = c % password.Length;
-            // Break into 2 sides
-            var left = password.Substring(0, insertIndex);
-            var right = password.Substring(insertIndex, password.Length - insertIndex);
-            
-            // update password
-            password = left + c + right;
-        }
-        // hash salted password
-        using var hash = SHA256.Create();
-        var byteArray = hash.ComputeHash(Encoding.UTF8.GetBytes(password));
-        // return SHA256 string
-        return Convert.ToHexString(byteArray);
+        var username = Util.GetInput("Username: ");
+        var password = Util.GetInput("Password: ");
+        // todo hash password asap
+        // report success
+        var loginSuccess = LogIn(database, username, password);
+        Console.WriteLine(loginSuccess
+            ? $"[SERVER] | Welcome {username}!"
+            : "[SERVER] | Incorrect Username or Password, unable to login");
+        return loginSuccess;
     }
 
-    public static bool LogIn(NpgsqlConnection database, string username, string password)
+    /// <summary>
+    /// Login to the Database
+    /// </summary>
+    /// <param name="database">database to log into</param>
+    /// <param name="username">Username to login</param>
+    /// <param name="password">Password to login</param>
+    private static bool LogIn(NpgsqlConnection database, string username, string password)
     {
+        // Get user from DB
         var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
         var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            // convert to salted hash and then compare
-            if ((string)reader["password"] == toSaltedHash(password, username))
+            // break if password bad
+            // todo number of password attempts?
+            if ((string) reader["password"] != password) break;
+            
+            LoggedInUser = readerToUser(reader);
+            reader.Close();
+            // update last accessed
+            using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)
             {
-                LoggedInUser = readerToUser(reader);
-                reader.Close();
-
-                using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)
-                {
-                    Parameters = {
-                        new() { Value = DateTime.Now },
-                    }
-                };
-                insert.Prepare();
-                insert.ExecuteNonQuery();
-
-                return true;
-            }
+                Parameters = {
+                    new() { Value = DateTime.Now },
+                }
+            };
+            insert.Prepare();
+            insert.ExecuteNonQuery();
+            return true;
         }
-
+        // username is bad
         reader.Close();
-
         return false;
     }
-
-    public static bool CreateUser(NpgsqlConnection database, string email, string username, string firstName, string lastName, DateOnly dob, string password)
+    
+    
+    /// <summary>
+    /// Prompts user for new user details
+    /// </summary>
+    /// <param name="database">database to query</param>
+    private static bool CreateUserPrompt(NpgsqlConnection database)
     {
-
-        // Checking inputs for validity
-        // Checking for valid email
-        if (email.Length > 0 && Util.IsValid(email) && username.Length > 0 && password.Length > 0)
+        // Accept only valid email
+        string email;
+        for (;;)
         {
-            // Checking for unique username
-            var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
-            var reader = cmd.ExecuteReader();
-
-            // Checking for long enough first and last names
-            if (reader.Rows == 0 && firstName.Length > 0 && lastName.Length > 0)
-            {
-                reader.Close();
-                // Checking for long enough password
-                
-                // SALT and Hash password
-                password = toSaltedHash(password, username);
-
-                using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
-                {
-                    Parameters =
-                                {
-                                    new() { Value = email },
-                                    new() { Value = username },
-                                    new() { Value = firstName },
-                                    new() { Value = lastName },
-                                    new() { Value = dob },
-                                    new() { Value = DateTime.Now }, // creation date is right now
-                                    new() { Value = DateTime.Now }, // last accessed date is right now
-                                    new() { Value = password }
-                                }
-                };
-                insert.Prepare();
-                var inserted = insert.ExecuteNonQuery();
-
-                if (inserted >= 0)
-                {
-                    reader.Close();
-                    return true;
-                }
-            }
-
-            reader.Close();
+            email = Util.GetInput("Email: ");
+            // break if valid
+            if(Util.IsValid(email))
+                break;
+            Console.WriteLine("[SERVER] | Please enter a valid email");
         }
+        
+    
+        // Accept only unique id
+        string username;
+        for (;;)
+        {
+            username = Util.GetInput("Username: ");
+            // Check if unique
+            if (Util.IsUniqueUsername(database, username))
+                break;
+            Console.WriteLine($"[SERVER] | Sorry, username \"{username}\" is taken, please try again");
+        }
+
+        // Get full name
+        var firstName = Util.GetInput("First Name: ");
+        var lastName = Util.GetInput("Last Name: ");
+        
+        // Accept proper dob string
+        DateOnly dob;
+        for (;;)
+        {
+            var dobInput = Util.GetInput("Date of Birth (MM/DD/YYYY): ");
+            try
+            {
+                var dobParts = dobInput.Split("/");
+                dob = new DateOnly(int.Parse(dobParts[2]), int.Parse(dobParts[1]), int.Parse(dobParts[0]));
+            }
+            catch (Exception e)
+            {
+                // dob failed
+                Console.WriteLine("[SERVER] | Couldn't parse Date of Birth, please format in the following form: (MM/DD/YYYY)");
+                continue;
+            }
+            // dob success
+            break;
+        }
+        var password = Util.GetInput("Password: ");
+        // todo salt immediately
+        
+        // attempt to create user
+        if (CreateUser(database, email, username, firstName, lastName, dob, password))
+            return LogIn(database, username, password);     // attempt login on success
+        
+        // else report failure
+        Console.WriteLine($"[SERVER] | Failed to create user {username}");  
         return false;
+        
+    }
+
+    /// <summary>
+    /// Create new User inside Database
+    /// </summary>
+    /// <param name="database">Database to query</param>
+    /// <param name="email">User's email</param>
+    /// <param name="username">User's unique username</param>
+    /// <param name="firstName">User's first name</param>
+    /// <param name="lastName">User's last name</param>
+    /// <param name="dob">User's date of birth</param>
+    /// <param name="password">User's hashed and salted password</param>
+    /// <returns>true if succeed, false otherwise</returns>
+    private static bool CreateUser(NpgsqlConnection database, string email, string username, string firstName, string lastName, DateOnly dob, string password)
+    {
+        // quick validate args
+        if (email.Length <= 0 || 
+            !Util.IsValid(email) || 
+            username.Length <= 0 || 
+            password.Length <= 0 ||
+            firstName.Length <= 0 ||
+            lastName.Length <= 0 ||
+            !Util.IsUniqueUsername(database, username)) 
+            return false;
+        
+        // Args are valid, insert into table
+        using var insert = new NpgsqlCommand("INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", database)
+        {
+            Parameters =
+            {
+                new() { Value = email },
+                new() { Value = username },
+                new() { Value = firstName },
+                new() { Value = lastName },
+                new() { Value = dob },
+                new() { Value = DateTime.Now }, // creation date is right now
+                new() { Value = DateTime.Now }, // last accessed date is right now
+                new() { Value = password }
+            }
+        };
+        insert.Prepare();
+        var inserted = insert.ExecuteNonQuery();
+        return inserted >= 0;   // success if added
     }
 }

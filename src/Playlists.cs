@@ -4,119 +4,201 @@ record Playlist(int playlistid, int userid, DateTime creationdate, string playli
 
 class Playlists
 {
-    private static Playlist readerToPlaylist(NpgsqlDataReader reader)
+    private static void PrintPlaylistCommands()
     {
-        return new Playlist(
-                (int)reader["playlistid"],
-                (int)reader["userid"],
-                (DateTime)reader["creationdate"],
-                (string)reader["playlistname"]
-        );
+        Console.WriteLine("==============Playlists===============");
+        Console.WriteLine("Create a playlist:       create <name>");
+        Console.WriteLine("List your playlists:     list");
+        Console.WriteLine("View a playlist:         view <name>");
+        Console.WriteLine("Listen to a playlist:    listen <name>");
+        Console.WriteLine("Rename a playlist:       rename");
+        Console.WriteLine("Edit a playlist:         edit <name>");
+        Console.WriteLine("Delete a playlist:       delete <name>");
+        Console.WriteLine("Show this Menu:          help");
+        Console.WriteLine("Back to Home:            back");
     }
+
 
     public static void HandleInput(NpgsqlConnection database)
     {
+        PrintPlaylistCommands();
         while (true)
         {
-            Console.WriteLine("Playlist possibilities: back, create, list, rename, delete, edit, view, listen");
-            string? input = Console.ReadLine();
-            switch (input)
+            var input = Util.GetInput(Util.GetServerPrompt("/playlists"));
+            var inputArgs = input.Split(" ");
+            switch (inputArgs[0].ToLower())
             {
+                // Create new playlist
                 case "create":
-                    Playlists.Create(database);
+                    // Use given name or get name if none given
+                    var name = inputArgs.Length < 2 ? Util.GetInput("Playlist Name: ") : inputArgs[1];
+                    Create(database, name);
+                    HandleEditInput(database, name);    // launch editor
                     break;
+                
+                // List exising playlists
                 case "list":
-                    Playlists.DisplayPlaylists(database);
+                    ListPlaylists(database);
                     break;
-                case "rename":
-                    Playlists.Rename(database);
-                    break;
-                case "delete":
-                    Playlists.Delete(database);
-                    break;
-                case "edit":
-                    Playlists.HandleEditInput(database);
-                    break;
-                case "listen":
-                    Playlists.ListenTo(database);
-                    break;
+                
+                // View a given playlist
                 case "view":
-                    Playlists.Info(database);
+                    if(inputArgs.Length < 2)
+                        Info(database, inputArgs[1]);
+                    else
+                        Info(database);
+                    
                     break;
+                
+                // listen to a given playlist
+                case "listen":
+                    if(inputArgs.Length < 2)
+                        ListenTo(database, inputArgs[1]);
+                    else
+                        ListenTo(database);
+                    break;
+                
+                // Rename a given playlist
+                case "rename":
+                    Rename(database);
+                    break;
+                
+                // Edit a given playlist
+                case "edit":
+                    if(inputArgs.Length < 2)
+                        HandleEditInput(database, inputArgs[1]);
+                    else
+                        HandleEditInput(database);
+                    break;
+                
+                // Delete a given playlist
+                case "delete":
+                    if(inputArgs.Length < 2)
+                        Delete(database, inputArgs[1]);
+                    else
+                        Delete(database);
+                    break;
+                
+                // Print the help menu
+                case "help":
+                    PrintPlaylistCommands();
+                    break;
+                
+                // return home
+                case "exit":
                 case "back":
                     return;
-                default:
-                    Console.WriteLine("Unknown command, try again");
-                    break;
             }
         }
     }
-
-    public static void HandleEditInput(NpgsqlConnection database)
+    
+    // Commands
+    
+    /// <summary>
+    /// Add new playlist to the database
+    /// </summary>
+    /// <param name="database">database to use</param>
+    /// <param name="playlistName">name of the playlist</param>
+    private static void Create(NpgsqlConnection database, string? playlistName=null)
     {
-        int? playlistId = GetPlaylist(database);
+        playlistName ??= Util.GetInput("Playlist Name: ");  // assign name if none given
+        
+        // add to ddb
+        var insert = new NpgsqlCommand("INSERT INTO playlist(userid, creationdate, playlistname) VALUES ($1, $2, $3)", database)
+        {
+            Parameters = {
+                new() { Value = Users.LoggedInUser?.userid },
+                new() { Value = DateTime.Now },
+                new() { Value = playlistName }
+            }
+        };
+        insert.Prepare();
+        insert.ExecuteNonQuery();
+    }
+    
+    private static void ListPlaylists(NpgsqlConnection database)
+    {
+        var playlists = GetForUser(database, Users.LoggedInUser!.userid);
+        Console.WriteLine("Playlists:");
+        foreach (var playlist in playlists)
+        {
+            var (duration, numSongs) = GetDurationAndNumSongs(database, playlist.playlistid);
+            Console.WriteLine($"\tPlaylist: {playlist.playlistname}, Duration: {duration / 60} minutes, Number of Songs: {numSongs}");
+        }
+    }
+
+    private static void Info(NpgsqlConnection database, string? playlistName=null)
+    {
+        playlistName ??= Util.GetInput("Playlist Name: ");  // assign name if none given
+        var playlistid = GetPlaylist(database, playlistName);
+        if (playlistid == null)
+        {
+            Util.ServerMessage($"Couldn't find playlist \"{playlistName}");
+            return;
+        }
+        DisplayPlaylist(database, (int) playlistid);
+    }
+    
+    private static void ListenTo(NpgsqlConnection database, string? playlistName=null)
+    {
+        playlistName ??= Util.GetInput("Playlist Name: ");  // assign name if none given
+        
+        int? playlistid = GetPlaylist(database, playlistName);
+        if (playlistid == null) return;
+        var songs = GetSongs(database, (int)playlistid);
+        if (songs.Count == 0) return;
+
+        foreach (Song song in songs)
+        {
+            Songs.ListenTo(database, song);
+        }
+    }
+    
+    private static void Rename(NpgsqlConnection database)
+    {
+  
+        // Get names
+        var playlistName = Util.GetInput("Target Playlist: ");
+        var newPlaylistName = Util.GetInput("New Name: ");
+
+        var update = new NpgsqlCommand($"UPDATE playlist SET playlistname = '{newPlaylistName}' WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}", database);
+        update.Prepare();
+        update.ExecuteNonQuery();
+    }
+    
+    private static void HandleEditInput(NpgsqlConnection database, string? playlistName=null)
+    {
+        playlistName ??= Util.GetInput("Playlist Name: ");  // assign name if none given
+        
+        var playlistId = GetPlaylist(database, playlistName);
         if (playlistId == null) return;
         while (true)
         {
-            DisplayPlaylist(database, (int)playlistId);
-            Console.WriteLine("Playlist edit possibilities: back, add, remove, add album");
-            string? input = Console.ReadLine();
+            DisplayPlaylist(database, (int) playlistId);
+            Console.WriteLine("Options: done, add, remove, add album");
+            var input = Util.GetInput(Util.GetServerPrompt("[Playlist Builder]"));
             switch (input)
             {
                 case "add":
-                    Playlists.InsertSong(database, (int)playlistId);
+                    InsertSong(database, (int)playlistId);
                     break;
                 case "remove":
-                    Playlists.RemoveSong(database, (int)playlistId);
+                    RemoveSong(database, (int)playlistId);
                     break;
                 case "add album":
-                    Playlists.InsertAlbum(database, (int)playlistId);
+                    InsertAlbum(database, (int)playlistId);
                     break;
-                case "back":
+                case "done":
+                    Util.ServerMessage("Playlist Saved!");
                     return;
-                default:
-                    Console.WriteLine("Unknown command, try again");
-                    break;
             }
         }
     }
-
-    private static int? GetPlaylist(NpgsqlConnection database)
+    
+    private static void Delete(NpgsqlConnection database, string? playlistName=null)
     {
-        Playlists.DisplayPlaylists(database);
-        Console.WriteLine("Enter a playlist name");
-        while (true)
-        {
-            var playlistName = Console.ReadLine();
-            if (playlistName == "back")
-            {
-                return null;
-            }
-            var cmd = new NpgsqlCommand($"SELECT playlistid FROM playlist WHERE playlistname='{playlistName}' AND userid={Users.LoggedInUser!.userid}", database);
-            var reader = cmd.ExecuteReader();
-            if (reader.Read())
-            {
-                var id = (int)reader["playlistId"];
-                reader.Close();
-                return id;
-            }
-            reader.Close();
-            Console.WriteLine("Couldn't find that playlist, try again or back");
-        }
-    }
-
-    private static void Info(NpgsqlConnection database)
-    {
-        int? playlistid = GetPlaylist(database);
-        if (playlistid == null) return;
-        DisplayPlaylist(database, (int)playlistid);
-    }
-
-    private static void Delete(NpgsqlConnection database)
-    {
-        Console.WriteLine("Enter the playlist to delete");
-        var playlistName = Console.ReadLine();
-
+        playlistName ??= Util.GetInput("Playlist Name: ");  // assign name if none given
+        
         List<Playlist> playlists = GetForUser(database, Users.LoggedInUser!.userid);
         var playlistId = playlists.Find(x => x.playlistname == playlistName)?.playlistid;
 
@@ -131,55 +213,42 @@ class Playlists
         delete.Prepare();
         delete.ExecuteNonQuery();
     }
-
-    private static void Rename(NpgsqlConnection database)
+    
+    // Utils
+    private static Playlist readerToPlaylist(NpgsqlDataReader reader)
     {
-        Console.WriteLine("Enter the playlist to rename");
-        var playlistName = Console.ReadLine();
-        Console.WriteLine("Enter the new playlist name");
-        var newPlaylistName = Console.ReadLine();
+        return new Playlist(
+            (int)reader["playlistid"],
+            (int)reader["userid"],
+            (DateTime)reader["creationdate"],
+            (string)reader["playlistname"]
+        );
+    }
+    
 
-        var update = new NpgsqlCommand($"UPDATE playlist SET playlistname = '{newPlaylistName}' WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}", database);
-        update.Prepare();
-        update.ExecuteNonQuery();
+    private static int? GetPlaylist(NpgsqlConnection database, string playlistName)
+    {
+        int? id = null;
+        var cmd = new NpgsqlCommand($"SELECT playlistid FROM playlist WHERE playlistname='{playlistName}' AND userid={Users.LoggedInUser!.userid}", database);
+        var reader = cmd.ExecuteReader();
+        if (reader.Read())
+            id = (int) reader["playlistId"];
+        else
+            Util.ServerMessage($"Couldn't find playlist {playlistName}");
+        reader.Close();
+        return id;
     }
 
-    public static void DisplayPlaylists(NpgsqlConnection database)
-    {
-        List<Playlist> playlists = GetForUser(database, Users.LoggedInUser!.userid);
-        Console.WriteLine($"\nPlaylists: ");
-        foreach (var playlist in playlists)
-        {
-            (float duration, int numSongs) = GetDurationAndNumSongs(database, playlist.playlistid);
-            Console.WriteLine($"    Playlist: {playlist.playlistname}, Duration: {duration / 60} minutes, Number of Songs: {numSongs}");
-        }
-    }
-
-    public static void DisplayPlaylist(NpgsqlConnection database, int playlistid)
+    
+    private static void DisplayPlaylist(NpgsqlConnection database, int playlistid)
     {
         Console.WriteLine($"\nSongs in playlist: ");
         Songs.PrintSongs(database, GetSongs(database, playlistid));
     }
 
-    public static void Create(NpgsqlConnection database)
-    {
-        Console.WriteLine("Enter playlist name");
-        var playlistName = Console.ReadLine();
+  
 
-        var insert = new NpgsqlCommand("INSERT INTO playlist(userid, creationdate, playlistname) VALUES ($1, $2, $3)", database)
-        {
-            Parameters = {
-                new() { Value = Users.LoggedInUser?.userid },
-                new() { Value = DateTime.Now },
-                new() { Value = playlistName }
-            }
-        };
-
-        insert.Prepare();
-        insert.ExecuteNonQuery();
-    }
-
-    public static List<Playlist> GetForUser(NpgsqlConnection database, int userid)
+    private static List<Playlist> GetForUser(NpgsqlConnection database, int userid)
     {
         var query = new NpgsqlCommand($"SELECT * FROM playlist WHERE userid={userid} ORDER BY playlistname ASC", database);
         var reader = query.ExecuteReader();
@@ -195,12 +264,12 @@ class Playlists
         return playlists;
     }
 
-    public static List<Song> GetSongs(NpgsqlConnection database, int playlistid)
+    private static List<Song> GetSongs(NpgsqlConnection database, int playlistid)
     {
         return Songs.GetSongs(database, GetSongIds(database, playlistid));
     }
 
-    public static List<int> GetSongIds(NpgsqlConnection database, int playlistid)
+    private static List<int> GetSongIds(NpgsqlConnection database, int playlistid)
     {
         var query = new NpgsqlCommand($"SELECT songid FROM songplaylist WHERE playlistid={playlistid}", database);
         var reader = query.ExecuteReader();
@@ -215,7 +284,7 @@ class Playlists
         return ids;
     }
 
-    public static (float, int) GetDurationAndNumSongs(NpgsqlConnection database, int playlistId)
+    private static (float, int) GetDurationAndNumSongs(NpgsqlConnection database, int playlistId)
     {
         var query = new NpgsqlCommand($"SELECT SUM(length), COUNT(*) FROM (SELECT * FROM song, songplaylist WHERE playlistid = {playlistId} AND song.songid = songplaylist.songid) as songs", database);
         var reader = query.ExecuteReader();
@@ -239,7 +308,7 @@ class Playlists
         return (-1, 0);
     }
 
-    public static void InsertSong(NpgsqlConnection database, int playlistid)
+    private static void InsertSong(NpgsqlConnection database, int playlistid)
     {
         Song? song = Songs.SelectSong(database);
         if (song == null) return;
@@ -250,7 +319,7 @@ class Playlists
         Console.WriteLine($"Added {song.title} to playlist");
     }
 
-    public static void RemoveSong(NpgsqlConnection database, int playlistid)
+    private static void RemoveSong(NpgsqlConnection database, int playlistid)
     {
         Song? song = Songs.SelectSong(database);
         if (song == null) return;
@@ -261,7 +330,7 @@ class Playlists
         Console.WriteLine($"Removed {song.title} from playlist");
     }
 
-    public static void InsertAlbum(NpgsqlConnection database, int playlistid)
+    private static void InsertAlbum(NpgsqlConnection database, int playlistid)
     {
         Album? album = Albums.SelectAlbum(database);
         if (album == null) return;
@@ -289,16 +358,5 @@ class Playlists
         Songs.PrintSongs(database, songs);
     }
 
-    public static void ListenTo(NpgsqlConnection database)
-    {
-        int? playlistid = GetPlaylist(database);
-        if (playlistid == null) return;
-        var songs = GetSongs(database, (int)playlistid);
-        if (songs.Count == 0) return;
-
-        foreach (Song song in songs)
-        {
-            Songs.ListenTo(database, song);
-        }
-    }
+   
 }

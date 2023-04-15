@@ -20,30 +20,40 @@ class Songs
     {
         return new SongIDs((int)reader["songid"]);
     }
+    
+    private static void PrinSongCommands()
+    {
+        Console.WriteLine("===============Songs==============");
+        Console.WriteLine("Listen to a Song:    listen");
+        Console.WriteLine("Show this Menu:      help");
+        Console.WriteLine("Back to Home:        back");
+    }
 
 
     public static void HandleInput(NpgsqlConnection database)
     {
-        Console.WriteLine("Song input possibilities: listen to");
-        string? input = Console.ReadLine();
-        if (input != null)
+        PrinSongCommands();
+        for (;;)
         {
-            switch (input)
+            var input = Util.GetInput(Util.GetServerPrompt("/songs"));
+            var inputArgs = input.Split(" ");
+            switch (inputArgs[0].ToLower())
             {
-                case "listen to":
+                // listen to a song
+                case "listen":
                     ListenInput(database);
                     break;
-
-                default:
-                    Console.WriteLine("Not an input");
-                    HandleInput(database);
+                
+                // show help menu
+                case "help":
+                    PrinSongCommands();
                     break;
+                
+                // return home
+                case "exit":
+                case "back": 
+                    return;
             }
-        }
-        else
-        {
-            Console.WriteLine("input is null, try again");
-            HandleInput(database);
         }
     }
 
@@ -92,6 +102,7 @@ class Songs
 
     private static Song? QuerySong(NpgsqlConnection database, string songTitle)
     {
+
         var cmd = new NpgsqlCommand($"SELECT * FROM song WHERE title='{songTitle}'", database);
         var reader = cmd.ExecuteReader();
         if (reader.Read())
@@ -133,15 +144,14 @@ class Songs
         }
     }
 
-    private static void ListenInput(NpgsqlConnection database)
+    private static void ListenInput(NpgsqlConnection database, string? songName=null)
     {
-        Console.WriteLine("Enter the song name to listen to");
-        string? songName = Console.ReadLine();
+        songName ??= Util.GetInput("Song Name: ");  // assign name if none given
         Song? song = QuerySong(database, songName);
 
         if (song == null)
         {
-            Console.WriteLine("Not a song");
+            Util.ServerMessage($"Couldn't find song \"{songName}\"");
             return;
         }
 
