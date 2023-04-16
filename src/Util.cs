@@ -3,8 +3,21 @@ using Npgsql;
 
 class Util
 {
+    // list of commands to use
+    private static List<string>? commands = null;
+    
     public const string ServerName = "spotify2";
     public static string UserName { get; set; } = "guest";
+    
+    public static void InitPresetCommands(string cmdFile)
+    {
+        if(!File.Exists(cmdFile)) return;   // check cmd file exists
+        commands = new List<string>();
+        foreach(var cmd in File.ReadAllText(cmdFile).Split(Environment.NewLine ))
+        {
+            commands.Add(cmd);
+        }
+    }
 
     public static string GetServerPrompt(string dir="")
     {
@@ -29,12 +42,23 @@ class Util
     /// <returns>string of input</returns>
     public static string GetInput(string? prompt=null)
     {
+
         // repeat until input is good
         // todo put cap?
         for (;;)
         {
             // display prompt if present
             if(prompt != null) Console.Write(prompt);
+            // check if preset commands are present
+            if (commands != null && commands.Count != 0)
+            {
+                // get and write given command
+                var devInput = commands[0];
+                Console.WriteLine(devInput);
+                
+                commands.RemoveAt(0);   // pop list
+                return devInput;
+            }
             var input = Console.ReadLine();
 
             // return input if good
