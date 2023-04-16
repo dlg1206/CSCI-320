@@ -88,6 +88,27 @@ class Users
         }
         return user;
     }
+    
+    /// <summary>
+    /// Get user by username
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="username">username to search for</param>
+    /// <returns>user if they exist, null otherwise</returns>
+    private static User? GetUserByUsername(NpgsqlConnection database, string username)
+    {
+        // build query
+        var query = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
+        var reader = query.ExecuteReader();
+
+        User? user = null;
+        // attempt to get user
+        if (reader.Read())
+            user = ReaderToUser(reader);
+        reader.Close();
+        // return result
+        return user;
+    }
 
     /// <summary>
     /// List the logged in users followers or who they follow
@@ -168,33 +189,29 @@ class Users
                 }
                 break;
             
-            // case "follow":
-            // case "unfollow":
-            //     var username = arg ?? Util.GetInput("Enter username: ");
-            //     var user = GetUserByUsername(database, username);
+            case "follow":
+            case "unfollow":
+                // get user by username
+                var username = arg ?? Util.GetInput("Enter username: ");    // prompt if no name given
+                var user = GetUserByUsername(database, username);
+                
+                // check if user exists
+                if (user == null)
+                {
+                    Util.ServerMessage($"User \"{username}\" does not exist!");
+                    break;
+                }
+                // else follow or unfollow
+                if (command.Equals("follow"))
+                    Follow(database, user);
+                else
+                    Unfollow(database, user);
+                break;
         }
         
-        // var email = Util.GetInput("Enter your friends email: ");
-        // // technically we could consolidate this down into one query, but having the utility method isn't bad
-        // User? friend = GetUserByUsername(database, email);
-        //
-        // if (friend == null)
-        // {
-        //     Console.WriteLine("No user exists with that email");
-        //     return;
-        // }
-        //
-        // if (follow)
-        // {
-        //     AddFriend(database, friend);
-        // }
-        // else
-        // {
-        //     RemoveFriend(database, friend);
-        // }
     }
 
-    private static void AddFriend(NpgsqlConnection database, User friend)
+    private static void Follow(NpgsqlConnection database, User friend)
     {
         if (LoggedInUser != null)
         {
@@ -204,7 +221,7 @@ class Users
         }
     }
 
-    private static void RemoveFriend(NpgsqlConnection database, User friend)
+    private static void Unfollow(NpgsqlConnection database, User friend)
     {
         if (LoggedInUser != null)
         {
@@ -213,28 +230,7 @@ class Users
             delete.ExecuteNonQuery();
         }
     }
-
     
-    /// <summary>
-    /// Get user by username
-    /// </summary>
-    /// <param name="database">db to query</param>
-    /// <param name="username">username to search for</param>
-    /// <returns>user if they exist, null otherwise</returns>
-    private static User? GetUserByUsername(NpgsqlConnection database, string username)
-    {
-        // build query
-        var query = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
-        var reader = query.ExecuteReader();
-
-        User? user = null;
-        // attempt to get user
-        if (reader.Read())
-            user = ReaderToUser(reader);
-        reader.Close();
-        // return result
-        return user;
-    }
 
     /// <summary>
     /// Prompts user for login details
