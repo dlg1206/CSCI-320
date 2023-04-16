@@ -18,18 +18,20 @@ class Users
         // switch through keywords
         switch (args[0].ToLower())
         {
+            // handle login
             case "login":
                 return LogInPrompt(database);
+            // handle new user
             case "new":
                 return CreateUserPrompt(database);
-            case "friends":
-                ListFriends(database);
-                break;
+            // handle follow commands
+            case "list":
             case "follow":
-                HandleFriend(database, true);
-                break;
             case "unfollow":
-                HandleFriend(database, false);
+                if(args.Length > 1)
+                    HandleFollowAction(database, args[0], args[1]);
+                else
+                    HandleFollowAction(database, args[0]);
                 break;
         }
         // unknown arg
@@ -88,61 +90,102 @@ class Users
     }
 
     /// <summary>
-    /// List the logged in users friends
+    /// List the logged in users followers or who they follow
     /// </summary>
     /// <param name="database">db to query</param>
-    private static void ListFriends(NpgsqlConnection database)
+    /// <param name="relationship"></param>
+    private static void ListUsers(NpgsqlConnection database, string relationship)
     {
+        NpgsqlCommand query;
+        string userIdCol;
+        switch (relationship)
+        {
+            // Get user's followers
+            case "followers":
+                query = new NpgsqlCommand($"SELECT * FROM friend WHERE userid2={LoggedInUser!.userid}", database);
+                userIdCol = "1";
+                break;
+            // Get who follows the user
+            case "follows":
+                query = new NpgsqlCommand($"SELECT * FROM friend WHERE userid1={LoggedInUser!.userid}", database);
+                userIdCol = "2";
+                break;
+            default:
+                Util.ServerMessage($"\"{relationship}\" is not a valid list command!");
+                return;
+        }
         // Get user's friends
-        var query = new NpgsqlCommand($"SELECT * FROM friend WHERE userid1={LoggedInUser!.userid}", database);
         var reader = query.ExecuteReader();
         
         // Get all friend ids
-        var friendIds = new List<int>();
+        var userIds = new List<int>();
         while (reader.Read())
-            friendIds.Add((int) reader["userid2"]);
+            userIds.Add((int) reader[$"userid{userIdCol}"]);
         
         reader.Close();
         
-        // Check to see if user has friends
-        if (friendIds.Count == 0)
+        // Check to see if user has followers / follows
+        if (userIds.Count == 0)
         {
-            Util.ServerMessage("Couldn't find any Friends!");
+            Util.ServerMessage($"Couldn't find any {relationship}!");
             return;
         }
         
-        // List total friend count
-        Console.WriteLine($"You have {friendIds.Count} friend" + (friendIds.Count == 1 ? "" : "s"));
+        // List total followers / follows count
+        Console.WriteLine($"You have {userIds.Count} {relationship.Remove(relationship.Length - 1)}" + (userIds.Count == 1 ? "" : "s"));
 
-        // for each friend id, if the user exists print user info
-        var friendCount = 1;
-        foreach (var u in friendIds.Select(id => GetUser(database, id)).Where(u => u != null))
+        // for each user id, if the user exists print user info
+        var userCount = 1;
+        foreach (var u in userIds.Select(id => GetUser(database, id)).Where(u => u != null))
         {
-            Console.WriteLine($"\tFriend {friendCount++}: {u.username}\t| Last seen: {u.lastAccessed}");
+            Console.WriteLine($"\tUser {userCount++}: {u.username}\t| Last seen: {u.lastAccessed}");
         }
     }
 
-    private static void HandleFriend(NpgsqlConnection database, bool follow)
+    /// <summary>
+    /// Handles the follow actions
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="command">follow command to execute</param>
+    /// <param name="arg">optional argument for command</param>
+    private static void HandleFollowAction(NpgsqlConnection database, string command, string? arg=null)
     {
-
-        var email = Util.GetInput("Enter your friends email: ");
-        // technically we could consolidate this down into one query, but having the utility method isn't bad
-        User? friend = GetUserFromEmail(database, email);
-
-        if (friend == null)
+        // switch based on the follow command
+        switch (command)
         {
-            Console.WriteLine("No user exists with that email");
-            return;
+            // list command
+            case "list":
+                // list users based on arg
+                if (arg != null)
+                {
+                    ListUsers(database, arg);
+                }
+                // else list both follows and follwers
+                else
+                {
+                    ListUsers(database, "follows");
+                    ListUsers(database, "followers");
+                }
+                break;
         }
-
-        if (follow)
-        {
-            AddFriend(database, friend);
-        }
-        else
-        {
-            RemoveFriend(database, friend);
-        }
+        // var email = Util.GetInput("Enter your friends email: ");
+        // // technically we could consolidate this down into one query, but having the utility method isn't bad
+        // User? friend = GetUserFromEmail(database, email);
+        //
+        // if (friend == null)
+        // {
+        //     Console.WriteLine("No user exists with that email");
+        //     return;
+        // }
+        //
+        // if (follow)
+        // {
+        //     AddFriend(database, friend);
+        // }
+        // else
+        // {
+        //     RemoveFriend(database, friend);
+        // }
     }
 
     private static void AddFriend(NpgsqlConnection database, User friend)

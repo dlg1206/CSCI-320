@@ -27,9 +27,9 @@
 **The application provides an user profile functionality that displays the following information:**
 - [X] The number of collections the user has
 
-- [ ] The number of followers
+- [X] The number of followers
 
-- [ ] The number of following
+- [X] The number of following
 
 - [ ] Their top 10 artists (by most plays, additions to collections, or combination)
   

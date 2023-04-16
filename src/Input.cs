@@ -22,7 +22,8 @@ class Input
     private static void PrintUserCommands()
     {
         Console.WriteLine("=================Friends=================");
-        Console.WriteLine("List your friends:       friends");
+        Console.WriteLine("List your followers:     list followers");
+        Console.WriteLine("List who you follow:     list follows");
         Console.WriteLine("Follow a User:           follow <email>");
         Console.WriteLine("Unfollow a User:         unfollow <email>");
         Console.WriteLine("==================Songs==================");
@@ -85,7 +86,7 @@ class Input
                     Users.HandleInput(database, inputArgs);
                     break;
                 
-                case "friends":     // list friends
+                case "list":        // list followers / following
                 case "follow":      // follow user
                 case "unfollow":    // unfollow user
                     if (Users.LoggedInUser != null)
