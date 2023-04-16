@@ -45,19 +45,24 @@ class Util
 
         // repeat until input is good
         // todo put cap?
+        string? devInput = null;
         for (;;)
         {
             // display prompt if present
             if(prompt != null) Console.Write(prompt);
+            
             // check if preset commands are present
-            if (_commands != null && _commands.Count != 0)
+            if (_commands != null && _commands.Count != 0 && devInput == null)
             {
-                // get and write given command
-                var devInput = _commands[0];
-                Console.WriteLine(devInput);
+                 devInput = _commands[0];    // get command
+                _commands.RemoveAt(0);          // pop list
                 
-                _commands.RemoveAt(0);   // pop list
-                return devInput;
+                // if not special prompt cmd, write cmd and continue
+                if (!devInput.Equals("$PROMPT"))
+                {
+                    Console.WriteLine(devInput);
+                    return devInput;
+                }
             }
             var input = Console.ReadLine();
 

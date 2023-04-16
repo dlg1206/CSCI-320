@@ -95,4 +95,5 @@ login
 foobar
 foobar
 ```
-will execute `login` command with `foobar` as the username and password
+will execute `login` command with `foobar` as the username and password.
+The special `$PROMPT` keyword can be used to ask for user input, then continue with the cmdFile
