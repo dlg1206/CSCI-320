@@ -79,13 +79,13 @@ class Input
                 
                 // User commands
                 
-                case "friends": // list friends
                 case "new":     // new user
                     if(Users.LoggedInUser != null)
                         break;
                     Users.HandleInput(database, inputArgs);
                     break;
-    
+                
+                case "friends":     // list friends
                 case "follow":      // follow user
                 case "unfollow":    // unfollow user
                     if (Users.LoggedInUser != null)

@@ -44,30 +44,48 @@ class Users
                         );
     }
 
-    public static List<User> GetUsers(NpgsqlConnection database)
+    public static User? GetUser(NpgsqlConnection database, int userId)
     {
-
-        var cmd = new NpgsqlCommand("SELECT * FROM \"user\"", database);
+        var cmd = new NpgsqlCommand($"SELECT {userId} FROM \"user\"", database);
         var reader = cmd.ExecuteReader();
-        List<User> users = new List<User>();
-        while (reader.Read())
+        User? user;
+        try
         {
-            users.Add(readerToUser(reader));
+            user = readerToUser(reader);
         }
-
-        // example of how to iterate through lists
-        // foreach (var user in users)
-        // {
-        //     Console.WriteLine(user.username + " " + user.password);
-        // }
-
-        reader.Close();
-        return users;
+        catch (Exception e)
+        {
+            user = null;
+        }
+        finally
+        {
+            reader.Close();
+        }
+       
+        return user;
     }
 
     private static void ListFriends(NpgsqlConnection database)
     {
-        Console.WriteLine("Not needed in this implementation");
+        var query = new NpgsqlCommand($"SELECT * FROM friend WHERE userid1={LoggedInUser!.userid}", database);
+        var reader = query.ExecuteReader();
+        
+        var friendIds = new List<int>();
+        while (reader.Read())
+        {
+            friendIds.Add((int) reader["userid2"]);
+        }
+        reader.Close();
+        if (friendIds.Count == 0)
+        {
+            Util.ServerMessage("Couldn't find any Friends!");
+            return;
+        }
+        
+        Console.WriteLine($"You have {friendIds.Count} friend" + (friendIds.Count == 1 ? "" : "s"));
+        
+        
+
     }
 
     private static void HandleFriend(NpgsqlConnection database, bool follow)
