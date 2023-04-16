@@ -82,3 +82,17 @@ DB_USER=<RIT ID>
 DB_PASS=<RIT PW>
 ```
 Then do `dotnet run`
+
+# Dev command preset files
+To run with preset command files, use the `-dev` flag like so:
+
+`dotnet run -dev <cmdFile1> <cmdFile2> ... <cmdFileN>`
+
+With each `cmdFile` containing a list of db commands on each line.
+Example:
+```
+login
+foobar
+foobar
+```
+will execute `login` command with `foobar` as the username and password
