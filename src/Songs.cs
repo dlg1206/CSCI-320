@@ -119,11 +119,10 @@ class Songs
     public static Song? SelectSong(NpgsqlConnection database)
     {
         Song? song = null;
-        Console.WriteLine("Enter song name:");
 
         while (song == null)
         {
-            var title = Console.ReadLine();
+            var title = Util.GetInput("Enter song name: ");
             if (title == "back") return null;
             song = QuerySong(database, title);
 
