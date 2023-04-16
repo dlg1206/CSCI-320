@@ -34,7 +34,7 @@ class Search
         {
             printQuery(database, title, artist, album, genre, titleSort, artistSort, genreSort, releaseSort, limit);
             Console.WriteLine("Search commands: back, filter title|artist|album|genre, sort title|artist|genre|release, limit");
-            string? input = Console.ReadLine();
+            var input = Util.GetServerPrompt("/songs");
             switch (input)
             {
                 case "filter title":
@@ -171,11 +171,10 @@ class Search
 
     public static string? SelectTitle(NpgsqlConnection database, string? old)
     {
-        Console.WriteLine("Enter part of song title or back:");
 
         while (true)
         {
-            var title = Console.ReadLine();
+            var title = Util.GetInput("Enter part of song title or back: ");
             if (title == "back") return old;
             if (title == "") return null;
             var cmd = new NpgsqlCommand($"SELECT title FROM song WHERE UPPER(title) LIKE UPPER('%{title}%')", database);
@@ -192,11 +191,10 @@ class Search
 
     public static string? SelectArtist(NpgsqlConnection database, string? old)
     {
-        Console.WriteLine("Enter part of artist name or back:");
 
         while (true)
         {
-            var name = Console.ReadLine();
+            var name = Util.GetInput("Enter part of artist name or back: ");
             if (name == "back") return old;
             if (name == "") return null;
             var cmd = new NpgsqlCommand($"SELECT artistid FROM artist WHERE UPPER(name) LIKE UPPER('%{name}%')", database);
@@ -214,11 +212,10 @@ class Search
 
     public static string? SelectAlbum(NpgsqlConnection database, string? old)
     {
-        Console.WriteLine("Enter part of album name or back:");
 
         while (true)
         {
-            var name = Console.ReadLine();
+            var name = Util.GetInput("Enter part of album name or back: ");
             if (name == "back") return old;
             if (name == "") return null;
             var cmd = new NpgsqlCommand($"SELECT albumid FROM album WHERE UPPER(name) LIKE UPPER('%{name}%')", database);
@@ -236,11 +233,10 @@ class Search
 
     public static string? SelectGenre(NpgsqlConnection database, string? old)
     {
-        Console.WriteLine("Enter part of genre name or back:");
 
         while (true)
         {
-            var name = Console.ReadLine();
+            var name = Util.GetInput("Enter part of genre name or back: ");
             if (name == "back") return old;
             if (name == "") return null;
             var cmd = new NpgsqlCommand($"SELECT genreid FROM genre WHERE UPPER(name) LIKE UPPER('%{name}%')", database);
