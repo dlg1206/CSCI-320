@@ -60,12 +60,12 @@ class Users
     }
 
     /// <summary>
-    /// Get a user from the db
+    /// Get a user from the db by id
     /// </summary>
     /// <param name="database">db to query</param>
     /// <param name="userId">user to search for</param>
     /// <returns>User if exists</returns>
-    private static User? GetUser(NpgsqlConnection database, int userId)
+    private static User? GetUserById(NpgsqlConnection database, int userId)
     {
         // Prepare query
         var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE userId={userId}", database);
@@ -136,7 +136,7 @@ class Users
 
         // for each user id, if the user exists print user info
         var userCount = 1;
-        foreach (var u in userIds.Select(id => GetUser(database, id)).Where(u => u != null))
+        foreach (var u in userIds.Select(id => GetUserById(database, id)).Where(u => u != null))
         {
             Console.WriteLine($"\tUser {userCount++}: {u.username}\t| Last seen: {u.lastAccessed}");
         }
@@ -167,10 +167,16 @@ class Users
                     ListUsers(database, "followers");
                 }
                 break;
+            
+            // case "follow":
+            // case "unfollow":
+            //     var username = arg ?? Util.GetInput("Enter username: ");
+            //     var user = GetUserByUsername(database, username);
         }
+        
         // var email = Util.GetInput("Enter your friends email: ");
         // // technically we could consolidate this down into one query, but having the utility method isn't bad
-        // User? friend = GetUserFromEmail(database, email);
+        // User? friend = GetUserByUsername(database, email);
         //
         // if (friend == null)
         // {
@@ -208,25 +214,26 @@ class Users
         }
     }
 
-    private static User? GetUserFromEmail(NpgsqlConnection database, string email)
+    
+    /// <summary>
+    /// Get user by username
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="username">username to search for</param>
+    /// <returns>user if they exist, null otherwise</returns>
+    private static User? GetUserByUsername(NpgsqlConnection database, string username)
     {
-        if (!Util.IsValid(email))
-        {
-            Console.WriteLine("Invalid email format");
-            return null;
-        }
-
-        var query = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE email LIKE '{email}'", database);
+        // build query
+        var query = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
         var reader = query.ExecuteReader();
-        if (reader.Read())
-        {
-            User user = ReaderToUser(reader);
-            reader.Close();
-            return user;
-        }
 
+        User? user = null;
+        // attempt to get user
+        if (reader.Read())
+            user = ReaderToUser(reader);
         reader.Close();
-        return null;
+        // return result
+        return user;
     }
 
     /// <summary>
