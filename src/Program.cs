@@ -13,7 +13,9 @@ public class DBTest
             if (args[0].Equals("-dev"))
             {
                 Console.WriteLine("Command File detected");
-                Util.InitPresetCommands(args[1]);
+                var cmdFiles = new List<string>(args);
+                cmdFiles.RemoveAt(0);   // remove '-dev' flag
+                Util.InitPresetCommands(cmdFiles);
             }
         }
         catch (Exception e)

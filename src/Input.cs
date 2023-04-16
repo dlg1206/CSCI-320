@@ -57,7 +57,7 @@ class Input
                     // on success, switch to user commands
                     if (Users.HandleInput(database, inputArgs) && Users.LoggedInUser != null)
                     {
-                        Util.UserName = Users.LoggedInUser.username;
+                        Util.userName = Users.LoggedInUser.username;
                         PrintUserCommands();
                     }
                     break;
