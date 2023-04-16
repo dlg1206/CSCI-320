@@ -38,23 +38,32 @@ class Users
     
     private static User readerToUser(NpgsqlDataReader reader)
     {
-        return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
-                        (string)reader["lastname"], (DateTime)reader["dob"], (DateTime)reader["creationdate"],
-                        (DateTime)reader["lastaccessed"], (string)reader["password"]
-                        );
+        return new User(
+            (int) reader["userid"], 
+            (string) reader["email"], 
+            (string) reader["username"], 
+            (string) reader["firstname"],
+            (string) reader["lastname"],
+            (DateTime) reader["dob"],
+            (DateTime) reader["creationdate"],
+            (DateTime) reader["lastaccessed"],
+            (string) reader["password"]
+            );
     }
 
     public static User? GetUser(NpgsqlConnection database, int userId)
     {
-        var cmd = new NpgsqlCommand($"SELECT {userId} FROM \"user\"", database);
+        var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE userId={userId}", database);
         var reader = cmd.ExecuteReader();
         User? user;
         try
         {
+            reader.Read();
             user = readerToUser(reader);
         }
         catch (Exception e)
         {
+            Console.Error.WriteLine(e);
             user = null;
         }
         finally
@@ -83,6 +92,16 @@ class Users
         }
         
         Console.WriteLine($"You have {friendIds.Count} friend" + (friendIds.Count == 1 ? "" : "s"));
+
+        var friendCount = 1;
+        // for each friend id, if the user exists print user info
+        foreach(var id in friendIds)
+        {
+            var u = GetUser(database, id);
+            if(u == null) continue;
+            Console.WriteLine($"\tFriend {friendCount++}: {u.username}\t| Last seen: {u.lastAccessed}");
+        }
+        
         
         
 
