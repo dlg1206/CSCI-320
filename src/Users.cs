@@ -72,8 +72,8 @@ class Users
 
     private static void HandleFriend(NpgsqlConnection database, bool follow)
     {
-        Console.WriteLine("Enter your friends email");
-        var email = Console.ReadLine();
+
+        var email = Util.GetInput("Enter your friends email: ");
         // technically we could consolidate this down into one query, but having the utility method isn't bad
         User? friend = GetUserFromEmail(database, email);
 
