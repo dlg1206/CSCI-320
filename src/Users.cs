@@ -1,3 +1,4 @@
+using System.Data;
 using Npgsql;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
@@ -36,75 +37,89 @@ class Users
     }
 
     
-    private static User readerToUser(NpgsqlDataReader reader)
+    /// <summary>
+    /// Utility to convert a reader value to user
+    /// </summary>
+    /// <param name="reader">reader with data</param>
+    /// <returns>New User with reader data</returns>
+    private static User ReaderToUser(IDataRecord reader)
     {
         return new User(
             (int) reader["userid"], 
             (string) reader["email"], 
             (string) reader["username"], 
             (string) reader["firstname"],
-            (string) reader["lastname"],
+            (string) reader["lastname"], 
             (DateTime) reader["dob"],
             (DateTime) reader["creationdate"],
-            (DateTime) reader["lastaccessed"],
+            (DateTime) reader["lastaccessed"], 
             (string) reader["password"]
             );
     }
 
-    public static User? GetUser(NpgsqlConnection database, int userId)
+    /// <summary>
+    /// Get a user from the db
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="userId">user to search for</param>
+    /// <returns>User if exists</returns>
+    private static User? GetUser(NpgsqlConnection database, int userId)
     {
+        // Prepare query
         var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE userId={userId}", database);
         var reader = cmd.ExecuteReader();
         User? user;
         try
         {
+            // attempt to get user
             reader.Read();
-            user = readerToUser(reader);
+            user = ReaderToUser(reader);
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Console.Error.WriteLine(e);
+            // error getting user
             user = null;
         }
         finally
         {
             reader.Close();
         }
-       
         return user;
     }
 
+    /// <summary>
+    /// List the logged in users friends
+    /// </summary>
+    /// <param name="database">db to query</param>
     private static void ListFriends(NpgsqlConnection database)
     {
+        // Get user's friends
         var query = new NpgsqlCommand($"SELECT * FROM friend WHERE userid1={LoggedInUser!.userid}", database);
         var reader = query.ExecuteReader();
         
+        // Get all friend ids
         var friendIds = new List<int>();
         while (reader.Read())
-        {
             friendIds.Add((int) reader["userid2"]);
-        }
+        
         reader.Close();
+        
+        // Check to see if user has friends
         if (friendIds.Count == 0)
         {
             Util.ServerMessage("Couldn't find any Friends!");
             return;
         }
         
+        // List total friend count
         Console.WriteLine($"You have {friendIds.Count} friend" + (friendIds.Count == 1 ? "" : "s"));
 
-        var friendCount = 1;
         // for each friend id, if the user exists print user info
-        foreach(var id in friendIds)
+        var friendCount = 1;
+        foreach (var u in friendIds.Select(id => GetUser(database, id)).Where(u => u != null))
         {
-            var u = GetUser(database, id);
-            if(u == null) continue;
             Console.WriteLine($"\tFriend {friendCount++}: {u.username}\t| Last seen: {u.lastAccessed}");
         }
-        
-        
-        
-
     }
 
     private static void HandleFriend(NpgsqlConnection database, bool follow)
@@ -162,7 +177,7 @@ class Users
         var reader = query.ExecuteReader();
         if (reader.Read())
         {
-            User user = readerToUser(reader);
+            User user = ReaderToUser(reader);
             reader.Close();
             return user;
         }
@@ -205,7 +220,7 @@ class Users
             // todo number of password attempts?
             if ((string) reader["password"] != password) break;
             
-            LoggedInUser = readerToUser(reader);
+            LoggedInUser = ReaderToUser(reader);
             reader.Close();
             // update last accessed
             using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)
