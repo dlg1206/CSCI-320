@@ -52,10 +52,10 @@ The [report](https://www.overleaf.com/3721374731njmxsbfqtjgb) will be updated to
 
 - [ ] containing an appendix listing all of the SQL statements used in this phase
 
-**Poster**
-- [ ] your team name
+**[Poster](https://docs.google.com/presentation/d/17bgQ1haruhtRolHtjDmnebT8UTFJkmFl9M_u5jTmN50/edit?usp=sharing)**
+- [X] your team name
 
-- [ ] the names of all team members
+- [X] the names of all team members
 
 - [ ] the observations from the data analytics
 
