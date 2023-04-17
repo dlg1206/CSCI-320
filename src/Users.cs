@@ -21,9 +21,11 @@ class Users
             // handle login
             case "login":
                 return LogInPrompt(database);
+            
             // handle new user
             case "new":
                 return CreateUserPrompt(database);
+            
             // handle follow commands
             case "list":
             case "follow":
@@ -33,11 +35,90 @@ class Users
                 else
                     HandleFollowAction(database, args[0]);
                 break;
+            case "top":
+                ListTopTenArtists(database);
+                break;
+                
         }
         // unknown arg
         return false;
     }
+    
+    /// <summary>
+    /// Handles the follow actions
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="command">follow command to execute</param>
+    /// <param name="arg">optional argument for command</param>
+    private static void HandleFollowAction(NpgsqlConnection database, string command, string? arg=null)
+    {
+        // switch based on the follow command
+        switch (command)
+        {
+            // list command
+            case "list":
+                // list users based on arg
+                if (arg != null)
+                {
+                    ListUsers(database, arg);
+                }
+                // else list both follows and follwers
+                else
+                {
+                    ListUsers(database, "follows");
+                    ListUsers(database, "followers");
+                }
+                break;
+            
+            case "follow":
+            case "unfollow":
+                // get user by username
+                var username = arg ?? Util.GetInput("Enter username: ");    // prompt if no name given
+                var user = GetUserByUsername(database, username);
+                
+                // check if user exists
+                if (user == null)
+                {
+                    Util.ServerMessage($"User \"{username}\" does not exist!");
+                    break;
+                }
+                // else follow or unfollow
+                if (command.Equals("follow"))
+                    Follow(database, user);
+                else
+                    Unfollow(database, user);
+                break;
+        }
+        
+    }
 
+    
+    /// <summary>
+    /// List a user's top artists
+    /// </summary>
+    /// <param name="database">db to query</param>
+    private static void ListTopTenArtists(NpgsqlConnection database)
+    {
+        // get top 10 artist ids based on song count
+        var cmd = new NpgsqlCommand(
+            $"SELECT artistid FROM ( SELECT songid, timestamp FROM listen WHERE userid={LoggedInUser!.userid} ) as userSongs INNER JOIN artistsong ON userSongs.songid = artistsong.songid GROUP BY artistid, artistsong.songid ORDER BY count(timestamp) desc LIMIT 10;",
+            database);
+        var reader = cmd.ExecuteReader();
+        var artistIds = new List<int>();
+        while (reader.Read())
+        {
+            artistIds.Add((int) reader["artistid"]);
+        }
+        reader.Close();
+
+        Console.WriteLine("-= Your Top Ten Artists =-");
+        var artistCount = 1;
+        // get each artist from db based on id
+        foreach (var artist in artistIds.Select(id => Artists.GetArtistById(database, id)))
+        {
+            Console.WriteLine($"{artistCount++}: {artist.name}");
+        }
+    }
     
     /// <summary>
     /// Utility to convert a reader value to user
@@ -161,54 +242,6 @@ class Users
         {
             Console.WriteLine($"\tUser {userCount++}: {u.username}\t| Last seen: {u.lastAccessed}");
         }
-    }
-
-    /// <summary>
-    /// Handles the follow actions
-    /// </summary>
-    /// <param name="database">db to query</param>
-    /// <param name="command">follow command to execute</param>
-    /// <param name="arg">optional argument for command</param>
-    private static void HandleFollowAction(NpgsqlConnection database, string command, string? arg=null)
-    {
-        // switch based on the follow command
-        switch (command)
-        {
-            // list command
-            case "list":
-                // list users based on arg
-                if (arg != null)
-                {
-                    ListUsers(database, arg);
-                }
-                // else list both follows and follwers
-                else
-                {
-                    ListUsers(database, "follows");
-                    ListUsers(database, "followers");
-                }
-                break;
-            
-            case "follow":
-            case "unfollow":
-                // get user by username
-                var username = arg ?? Util.GetInput("Enter username: ");    // prompt if no name given
-                var user = GetUserByUsername(database, username);
-                
-                // check if user exists
-                if (user == null)
-                {
-                    Util.ServerMessage($"User \"{username}\" does not exist!");
-                    break;
-                }
-                // else follow or unfollow
-                if (command.Equals("follow"))
-                    Follow(database, user);
-                else
-                    Unfollow(database, user);
-                break;
-        }
-        
     }
 
     private static void Follow(NpgsqlConnection database, User friend)

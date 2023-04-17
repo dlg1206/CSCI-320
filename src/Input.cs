@@ -30,6 +30,8 @@ class Input
         Console.WriteLine("Search all songs:        search");
         Console.WriteLine("Access your songs:       songs");
         Console.WriteLine("Access your playlists:   playlists");
+        Console.WriteLine("================Statistics===============");
+        Console.WriteLine("List your top artists:   top");
         Console.WriteLine("=================Account=================");
         Console.WriteLine("Logout of Account:       logout");
         Console.WriteLine("Exit the System:         exit");
@@ -86,6 +88,7 @@ class Input
                     Users.HandleInput(database, inputArgs);
                     break;
                 
+                case "top":         // list top artists
                 case "list":        // list followers / following
                 case "follow":      // follow user
                 case "unfollow":    // unfollow user
