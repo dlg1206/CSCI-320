@@ -28,6 +28,9 @@ class Users
             
             // handle follow commands
             case "list":
+                // // list follow / followers' top 50 songs
+                // if(args.Length == 3 && args[2].Equals("songs"))
+                //     ListUsersTopSongs(database, args[1]);
             case "follow":
             case "unfollow":
                 if(args.Length > 1)
@@ -62,7 +65,7 @@ class Users
                 {
                     ListUsers(database, arg);
                 }
-                // else list both follows and follwers
+                // else list both follows and followers
                 else
                 {
                     ListUsers(database, "follows");
@@ -191,12 +194,14 @@ class Users
         return user;
     }
 
+    
     /// <summary>
-    /// List the logged in users followers or who they follow
+    /// 
     /// </summary>
-    /// <param name="database">db to query</param>
+    /// <param name="database"></param>
     /// <param name="relationship"></param>
-    private static void ListUsers(NpgsqlConnection database, string relationship)
+    /// <returns></returns>
+    private static List<User?>? GetUsersByRelationship(NpgsqlConnection database, string relationship)
     {
         NpgsqlCommand query;
         string userIdCol;
@@ -214,7 +219,7 @@ class Users
                 break;
             default:
                 Util.ServerMessage($"\"{relationship}\" is not a valid list command!");
-                return;
+                return null;
         }
         // Get user's friends
         var reader = query.ExecuteReader();
@@ -227,21 +232,41 @@ class Users
         reader.Close();
         
         // Check to see if user has followers / follows
-        if (userIds.Count == 0)
-        {
-            Util.ServerMessage($"Couldn't find any {relationship}!");
+        if (userIds.Count != 0) 
+            return userIds.Select(id => GetUserById(database, id)).Where(u => u != null).ToList();  // users array
+        
+        Util.ServerMessage($"Couldn't find any {relationship}!");
+        return null;
+
+    }
+    
+    /// <summary>
+    /// List the logged in users followers or who they follow
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="relationship"></param>
+    private static void ListUsers(NpgsqlConnection database, string relationship)
+    {
+
+        var users = GetUsersByRelationship(database, relationship);
+
+        if (users == null)
             return;
-        }
         
         // List total followers / follows count
-        Console.WriteLine($"You have {userIds.Count} {relationship.Remove(relationship.Length - 1)}" + (userIds.Count == 1 ? "" : "s"));
+        Console.WriteLine($"You have {users.Count} {relationship.Remove(relationship.Length - 1)}" + (users.Count == 1 ? "" : "s"));
 
         // for each user id, if the user exists print user info
         var userCount = 1;
-        foreach (var u in userIds.Select(id => GetUserById(database, id)).Where(u => u != null))
+        foreach (var u in users)
         {
-            Console.WriteLine($"\tUser {userCount++}: {u.username}\t| Last seen: {u.lastAccessed}");
+            Console.WriteLine($"\tUser {userCount++}: {u!.username}\t| Last seen: {u.lastAccessed}");
         }
+    }
+
+    private static void ListUsersTopSongs(NpgsqlConnection database)
+    {
+        
     }
 
     private static void Follow(NpgsqlConnection database, User friend)
