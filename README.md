@@ -34,7 +34,7 @@
 - [X] Their top 10 artists (by most plays, additions to collections, or combination)
   
 **The application must provide a song recommendation system with the following options:**
-- [ ] The top 50 most popular songs in the last 30 days (rolling)
+- [X] The top 50 most popular songs in the last 30 days (rolling)
 
 - [ ] The top 50 most popular songs among my friends
 

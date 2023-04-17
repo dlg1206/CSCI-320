@@ -85,4 +85,14 @@ class Util
         reader.Close();
         return result;
     }
+    
+    /// <summary>
+    /// Get n tabs
+    /// </summary>
+    /// <param name="n">number of tabs</param>
+    /// <returns>tabs</returns>
+    public static string Tabs(int n)
+    {
+        return new string('\t', n);
+    }
 }
