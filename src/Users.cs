@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Data;
 using Npgsql;
+using NpgsqlTypes;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
 
@@ -26,17 +28,31 @@ class Users
             case "new":
                 return CreateUserPrompt(database);
             
-            // handle follow commands
+            // Either list follows/followers or their songs
             case "list":
-                // // list follow / followers' top 50 songs
-                // if(args.Length == 3 && args[2].Equals("songs"))
-                //     ListUsersTopSongs(database, args[1]);
+                switch (args.Length)
+                {
+                    // list follow and followers
+                    case 1:
+                        HandleFollowAction(database, args[0]);
+                        break;
+                    
+                    // list follow or followers
+                    case 2:
+                        HandleFollowAction(database, args[0], args[1]);
+                        break;
+                    // list follow / followers' top 50 songs
+                    case 3 when args[2].Equals("songs"):
+                        ListUsersTopSongs(database, args[1]);
+                        break;
+                }
+                break;
+
+            // handle follow commands
             case "follow":
             case "unfollow":
                 if(args.Length > 1)
                     HandleFollowAction(database, args[0], args[1]);
-                else
-                    HandleFollowAction(database, args[0]);
                 break;
             case "top":
                 ListTopTenArtists(database);
@@ -196,11 +212,11 @@ class Users
 
     
     /// <summary>
-    /// 
+    /// Gets users based on the given relationship
     /// </summary>
-    /// <param name="database"></param>
-    /// <param name="relationship"></param>
-    /// <returns></returns>
+    /// <param name="database">db to query</param>
+    /// <param name="relationship">follows/follower</param>
+    /// <returns>list of users</returns>
     private static List<User?>? GetUsersByRelationship(NpgsqlConnection database, string relationship)
     {
         NpgsqlCommand query;
@@ -244,7 +260,7 @@ class Users
     /// List the logged in users followers or who they follow
     /// </summary>
     /// <param name="database">db to query</param>
-    /// <param name="relationship"></param>
+    /// <param name="relationship">follows/followers</param>
     private static void ListUsers(NpgsqlConnection database, string relationship)
     {
 
@@ -264,9 +280,41 @@ class Users
         }
     }
 
-    private static void ListUsersTopSongs(NpgsqlConnection database)
+    /// <summary>
+    /// Lists top 50 songs of followers/follows
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="relationship">followers/follows</param>
+    private static void ListUsersTopSongs(NpgsqlConnection database, string relationship)
     {
+        // Get users
+        var users = GetUsersByRelationship(database, relationship);
+        if(users == null || users.Count == 0) return;   // get they exists
+
+        Console.WriteLine(relationship.Equals("follows")
+            ? "-= Top Songs of the people you follow =-"
+            : "-= Top Songs of your followers =-");
+
+        // get just user ids as sql string
+        var userIds = $"{users[0]!.userid}";    // so don't start w/ ', '
+        users.RemoveAt(0);
+        // append rest of users
+        userIds = users.Aggregate(userIds, (current, u) => current + $", {u!.userid}");
+
+
+        // get the 50 top songs from all the songs that the users listened to
+        var query = new NpgsqlCommand(
+            $"SELECT title, count(timestamp) FROM ( SELECT songid, timestamp FROM listen WHERE userid IN({userIds}) group by songid, timestamp ) as topUserSongs INNER JOIN ( SELECT songid, title FROM song ) as songNames ON topUserSongs.songid = songNames.songid GROUP BY title ORDER BY count(timestamp) desc LIMIT 50;",
+            database
+        );
+        var reader = query.ExecuteReader();
         
+        // Print all songs
+        var songCount = 1;
+        while (reader.Read())
+            Console.WriteLine($"\tSong {songCount++}: {(string) reader["title"]}");
+        
+        reader.Close();
     }
 
     private static void Follow(NpgsqlConnection database, User friend)

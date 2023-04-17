@@ -36,7 +36,7 @@
 **The application must provide a song recommendation system with the following options:**
 - [X] The top 50 most popular songs in the last 30 days (rolling)
 
-- [ ] The top 50 most popular songs among my friends
+- [X] The top 50 most popular songs among my friends
 
 - [ ] The top 5 most popular genres of the month (calendar month)
 
