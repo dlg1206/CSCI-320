@@ -1,4 +1,7 @@
+using System.Collections;
+using System.Data;
 using Npgsql;
+using NpgsqlTypes;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
 
@@ -17,83 +20,304 @@ class Users
         // switch through keywords
         switch (args[0].ToLower())
         {
+            // handle login
             case "login":
                 return LogInPrompt(database);
+            
+            // handle new user
             case "new":
                 return CreateUserPrompt(database);
-            case "friends":
-                ListFriends(database);
+            
+            // Either list follows/followers or their songs
+            case "list":
+                switch (args.Length)
+                {
+                    // list follow and followers
+                    case 1:
+                        HandleFollowAction(database, args[0]);
+                        break;
+                    
+                    // list follow or followers
+                    case 2:
+                        HandleFollowAction(database, args[0], args[1]);
+                        break;
+                    // list follow / followers' top 50 songs
+                    case 3 when args[2].Equals("songs"):
+                        ListUsersTopSongs(database, args[1]);
+                        break;
+                }
                 break;
+
+            // handle follow commands
             case "follow":
-                HandleFriend(database, true);
-                break;
             case "unfollow":
-                HandleFriend(database, false);
+                if(args.Length > 1)
+                    HandleFollowAction(database, args[0], args[1]);
                 break;
+            case "top":
+                ListTopTenArtists(database);
+                break;
+                
         }
         // unknown arg
         return false;
     }
+    
+    /// <summary>
+    /// Handles the follow actions
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="command">follow command to execute</param>
+    /// <param name="arg">optional argument for command</param>
+    private static void HandleFollowAction(NpgsqlConnection database, string command, string? arg=null)
+    {
+        // switch based on the follow command
+        switch (command)
+        {
+            // list command
+            case "list":
+                // list users based on arg
+                if (arg != null)
+                {
+                    ListUsers(database, arg);
+                }
+                // else list both follows and followers
+                else
+                {
+                    ListUsers(database, "follows");
+                    ListUsers(database, "followers");
+                }
+                break;
+            
+            case "follow":
+            case "unfollow":
+                // get user by username
+                var username = arg ?? Util.GetInput("Enter username: ");    // prompt if no name given
+                var user = GetUserByUsername(database, username);
+                
+                // check if user exists
+                if (user == null)
+                {
+                    Util.ServerMessage($"User \"{username}\" does not exist!");
+                    break;
+                }
+                // else follow or unfollow
+                if (command.Equals("follow"))
+                    Follow(database, user);
+                else
+                    Unfollow(database, user);
+                break;
+        }
+        
+    }
 
     
-    private static User readerToUser(NpgsqlDataReader reader)
+    /// <summary>
+    /// List a user's top artists
+    /// </summary>
+    /// <param name="database">db to query</param>
+    private static void ListTopTenArtists(NpgsqlConnection database)
     {
-        return new User((int)reader["userid"], (string)reader["email"], (string)reader["username"], (string)reader["firstname"],
-                        (string)reader["lastname"], (DateTime)reader["dob"], (DateTime)reader["creationdate"],
-                        (DateTime)reader["lastaccessed"], (string)reader["password"]
-                        );
-    }
-
-    public static List<User> GetUsers(NpgsqlConnection database)
-    {
-
-        var cmd = new NpgsqlCommand("SELECT * FROM \"user\"", database);
+        // get top 10 artist ids based on song count
+        var cmd = new NpgsqlCommand(
+            $"SELECT artistid FROM ( SELECT songid, timestamp FROM listen WHERE userid={LoggedInUser!.userid} ) as userSongs INNER JOIN artistsong ON userSongs.songid = artistsong.songid GROUP BY artistid, artistsong.songid ORDER BY count(timestamp) desc LIMIT 10;",
+            database);
         var reader = cmd.ExecuteReader();
-        List<User> users = new List<User>();
+        var artistIds = new List<int>();
         while (reader.Read())
         {
-            users.Add(readerToUser(reader));
+            artistIds.Add((int) reader["artistid"]);
         }
-
-        // example of how to iterate through lists
-        // foreach (var user in users)
-        // {
-        //     Console.WriteLine(user.username + " " + user.password);
-        // }
-
         reader.Close();
-        return users;
-    }
 
-    private static void ListFriends(NpgsqlConnection database)
-    {
-        Console.WriteLine("Not needed in this implementation");
-    }
-
-    private static void HandleFriend(NpgsqlConnection database, bool follow)
-    {
-        Console.WriteLine("Enter your friends email");
-        var email = Console.ReadLine();
-        // technically we could consolidate this down into one query, but having the utility method isn't bad
-        User? friend = GetUserFromEmail(database, email);
-
-        if (friend == null)
+        Console.WriteLine("-= Your Top Ten Artists =-");
+        var artistCount = 1;
+        // get each artist from db based on id
+        foreach (var artist in artistIds.Select(id => Artists.GetArtistById(database, id)))
         {
-            Console.WriteLine("No user exists with that email");
+            Console.WriteLine($"{artistCount++}: {artist.name}");
+        }
+    }
+    
+    /// <summary>
+    /// Utility to convert a reader value to user
+    /// </summary>
+    /// <param name="reader">reader with data</param>
+    /// <returns>New User with reader data</returns>
+    private static User ReaderToUser(IDataRecord reader)
+    {
+        return new User(
+            (int) reader["userid"], 
+            (string) reader["email"], 
+            (string) reader["username"], 
+            (string) reader["firstname"],
+            (string) reader["lastname"], 
+            (DateTime) reader["dob"],
+            (DateTime) reader["creationdate"],
+            (DateTime) reader["lastaccessed"], 
+            (string) reader["password"]
+            );
+    }
+
+    /// <summary>
+    /// Get a user from the db by id
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="userId">user to search for</param>
+    /// <returns>User if exists</returns>
+    private static User? GetUserById(NpgsqlConnection database, int userId)
+    {
+        // Prepare query
+        var cmd = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE userId={userId}", database);
+        var reader = cmd.ExecuteReader();
+        User? user;
+        try
+        {
+            // attempt to get user
+            reader.Read();
+            user = ReaderToUser(reader);
+        }
+        catch (Exception)
+        {
+            // error getting user
+            user = null;
+        }
+        finally
+        {
+            reader.Close();
+        }
+        return user;
+    }
+    
+    /// <summary>
+    /// Get user by username
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="username">username to search for</param>
+    /// <returns>user if they exist, null otherwise</returns>
+    private static User? GetUserByUsername(NpgsqlConnection database, string username)
+    {
+        // build query
+        var query = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE username LIKE '{username}'", database);
+        var reader = query.ExecuteReader();
+
+        User? user = null;
+        // attempt to get user
+        if (reader.Read())
+            user = ReaderToUser(reader);
+        reader.Close();
+        // return result
+        return user;
+    }
+
+    
+    /// <summary>
+    /// Gets users based on the given relationship
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="relationship">follows/follower</param>
+    /// <returns>list of users</returns>
+    private static List<User?>? GetUsersByRelationship(NpgsqlConnection database, string relationship)
+    {
+        NpgsqlCommand query;
+        string userIdCol;
+        switch (relationship)
+        {
+            // Get user's followers
+            case "followers":
+                query = new NpgsqlCommand($"SELECT * FROM friend WHERE userid2={LoggedInUser!.userid}", database);
+                userIdCol = "1";
+                break;
+            // Get who follows the user
+            case "follows":
+                query = new NpgsqlCommand($"SELECT * FROM friend WHERE userid1={LoggedInUser!.userid}", database);
+                userIdCol = "2";
+                break;
+            default:
+                Util.ServerMessage($"\"{relationship}\" is not a valid list command!");
+                return null;
+        }
+        // Get user's friends
+        var reader = query.ExecuteReader();
+        
+        // Get all friend ids
+        var userIds = new List<int>();
+        while (reader.Read())
+            userIds.Add((int) reader[$"userid{userIdCol}"]);
+        
+        reader.Close();
+        
+        // Check to see if user has followers / follows
+        if (userIds.Count != 0) 
+            return userIds.Select(id => GetUserById(database, id)).Where(u => u != null).ToList();  // users array
+        
+        Util.ServerMessage($"Couldn't find any {relationship}!");
+        return null;
+
+    }
+    
+    /// <summary>
+    /// List the logged in users followers or who they follow
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="relationship">follows/followers</param>
+    private static void ListUsers(NpgsqlConnection database, string relationship)
+    {
+
+        var users = GetUsersByRelationship(database, relationship);
+
+        if (users == null)
             return;
-        }
+        
+        // List total followers / follows count
+        Console.WriteLine($"You have {users.Count} {relationship.Remove(relationship.Length - 1)}" + (users.Count == 1 ? "" : "s"));
 
-        if (follow)
+        // for each user id, if the user exists print user info
+        var userCount = 1;
+        foreach (var u in users)
         {
-            AddFriend(database, friend);
-        }
-        else
-        {
-            RemoveFriend(database, friend);
+            Console.WriteLine($"\tUser {userCount++}: {u!.username}\t| Last seen: {u.lastAccessed}");
         }
     }
 
-    private static void AddFriend(NpgsqlConnection database, User friend)
+    /// <summary>
+    /// Lists top 50 songs of followers/follows
+    /// </summary>
+    /// <param name="database">db to query</param>
+    /// <param name="relationship">followers/follows</param>
+    private static void ListUsersTopSongs(NpgsqlConnection database, string relationship)
+    {
+        // Get users
+        var users = GetUsersByRelationship(database, relationship);
+        if(users == null || users.Count == 0) return;   // get they exists
+
+        Console.WriteLine(relationship.Equals("follows")
+            ? "-= Top Songs of the people you follow =-"
+            : "-= Top Songs of your followers =-");
+
+        // get just user ids as sql string
+        var userIds = $"{users[0]!.userid}";    // so don't start w/ ', '
+        users.RemoveAt(0);
+        // append rest of users
+        userIds = users.Aggregate(userIds, (current, u) => current + $", {u!.userid}");
+
+
+        // get the 50 top songs from all the songs that the users listened to
+        var query = new NpgsqlCommand(
+            $"SELECT title, count(timestamp) FROM ( SELECT songid, timestamp FROM listen WHERE userid IN({userIds}) group by songid, timestamp ) as topUserSongs INNER JOIN ( SELECT songid, title FROM song ) as songNames ON topUserSongs.songid = songNames.songid GROUP BY title ORDER BY count(timestamp) desc LIMIT 50;",
+            database
+        );
+        var reader = query.ExecuteReader();
+        
+        // Print all songs
+        var songCount = 1;
+        while (reader.Read())
+            Console.WriteLine($"\tSong {songCount++}: {(string) reader["title"]}");
+        
+        reader.Close();
+    }
+
+    private static void Follow(NpgsqlConnection database, User friend)
     {
         if (LoggedInUser != null)
         {
@@ -103,7 +327,7 @@ class Users
         }
     }
 
-    private static void RemoveFriend(NpgsqlConnection database, User friend)
+    private static void Unfollow(NpgsqlConnection database, User friend)
     {
         if (LoggedInUser != null)
         {
@@ -112,27 +336,7 @@ class Users
             delete.ExecuteNonQuery();
         }
     }
-
-    private static User? GetUserFromEmail(NpgsqlConnection database, string email)
-    {
-        if (!Util.IsValid(email))
-        {
-            Console.WriteLine("Invalid email format");
-            return null;
-        }
-
-        var query = new NpgsqlCommand($"SELECT * FROM \"user\" WHERE email LIKE '{email}'", database);
-        var reader = query.ExecuteReader();
-        if (reader.Read())
-        {
-            User user = readerToUser(reader);
-            reader.Close();
-            return user;
-        }
-
-        reader.Close();
-        return null;
-    }
+    
 
     /// <summary>
     /// Prompts user for login details
@@ -168,7 +372,7 @@ class Users
             // todo number of password attempts?
             if ((string) reader["password"] != password) break;
             
-            LoggedInUser = readerToUser(reader);
+            LoggedInUser = ReaderToUser(reader);
             reader.Close();
             // update last accessed
             using var insert = new NpgsqlCommand($"UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'", database)

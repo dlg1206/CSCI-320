@@ -3,12 +3,25 @@ using Npgsql;
 
 class Util
 {
-    public const string ServerName = "spotify2";
-    public static string UserName { get; set; } = "guest";
+    // list of commands to use
+    private static List<string>? _commands;
+
+    private const string ServerName = "spotify2";
+    public static string userName { get; set; } = "guest";
+    
+    public static void InitPresetCommands(IEnumerable<string> cmdFiles)
+    {
+        _commands = new List<string>();
+        // if the cmd file exists, split the file on the newline and add the commands
+        foreach (var cmd in cmdFiles.Where(File.Exists).SelectMany(cmdFile => File.ReadAllText(cmdFile).Split(Environment.NewLine)))
+        {
+            _commands.Add(cmd);
+        }
+    }
 
     public static string GetServerPrompt(string dir="")
     {
-        return $"{UserName}@{ServerName}:~{dir}$ ";
+        return $"{userName}@{ServerName}:~{dir}$ ";
     }
 
     public static string ServerMessage(string msg)
@@ -29,12 +42,28 @@ class Util
     /// <returns>string of input</returns>
     public static string GetInput(string? prompt=null)
     {
+
         // repeat until input is good
         // todo put cap?
+        string? devInput = null;
         for (;;)
         {
             // display prompt if present
             if(prompt != null) Console.Write(prompt);
+            
+            // check if preset commands are present
+            if (_commands != null && _commands.Count != 0 && devInput == null)
+            {
+                 devInput = _commands[0];    // get command
+                _commands.RemoveAt(0);          // pop list
+                
+                // if not special prompt cmd, write cmd and continue
+                if (!devInput.Equals("$PROMPT"))
+                {
+                    Console.WriteLine(devInput);
+                    return devInput;
+                }
+            }
             var input = Console.ReadLine();
 
             // return input if good
@@ -55,5 +84,15 @@ class Util
         var result = !reader.HasRows;   // if has rows than username exists
         reader.Close();
         return result;
+    }
+    
+    /// <summary>
+    /// Get n tabs
+    /// </summary>
+    /// <param name="n">number of tabs</param>
+    /// <returns>tabs</returns>
+    public static string Tabs(int n)
+    {
+        return new string('\t', n);
     }
 }

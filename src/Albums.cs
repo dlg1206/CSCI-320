@@ -17,11 +17,10 @@ class Albums
     public static Album? SelectAlbum(NpgsqlConnection database)
     {
         Album? album = null;
-        Console.WriteLine("Enter album name:");
 
         while (album == null)
         {
-            var title = Console.ReadLine();
+            var title = Util.GetInput("Enter Album Name: ");
             if (title == "back") return null;
             var cmd = new NpgsqlCommand($"SELECT * FROM album WHERE name='{title}'", database);
             var reader = cmd.ExecuteReader();
@@ -129,7 +128,7 @@ class Albums
     private static void ListenInput(NpgsqlConnection database)
     {
         Console.WriteLine("Enter the song name to listen to");
-        string? album = Console.ReadLine();
+        string album = Util.GetInput("Enter the song name to listen to: ");
         ListenTo(database, album);
     }
 

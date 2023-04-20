@@ -22,13 +22,16 @@ class Input
     private static void PrintUserCommands()
     {
         Console.WriteLine("=================Friends=================");
-        Console.WriteLine("List your friends:       friends");
+        Console.WriteLine("List your followers:     list followers");
+        Console.WriteLine("List who you follow:     list follows");
         Console.WriteLine("Follow a User:           follow <email>");
         Console.WriteLine("Unfollow a User:         unfollow <email>");
         Console.WriteLine("==================Songs==================");
         Console.WriteLine("Search all songs:        search");
         Console.WriteLine("Access your songs:       songs");
         Console.WriteLine("Access your playlists:   playlists");
+        Console.WriteLine("================Statistics===============");
+        Console.WriteLine("List your top artists:   top");
         Console.WriteLine("=================Account=================");
         Console.WriteLine("Logout of Account:       logout");
         Console.WriteLine("Exit the System:         exit");
@@ -57,7 +60,7 @@ class Input
                     // on success, switch to user commands
                     if (Users.HandleInput(database, inputArgs) && Users.LoggedInUser != null)
                     {
-                        Util.UserName = Users.LoggedInUser.username;
+                        Util.userName = Users.LoggedInUser.username;
                         PrintUserCommands();
                     }
                     break;
@@ -79,13 +82,14 @@ class Input
                 
                 // User commands
                 
-                case "friends": // list friends
                 case "new":     // new user
                     if(Users.LoggedInUser != null)
                         break;
                     Users.HandleInput(database, inputArgs);
                     break;
-    
+                
+                case "top":         // list top artists
+                case "list":        // list followers / following
                 case "follow":      // follow user
                 case "unfollow":    // unfollow user
                     if (Users.LoggedInUser != null)

@@ -23,8 +23,9 @@ class Songs
     
     private static void PrinSongCommands()
     {
-        Console.WriteLine("===============Songs==============");
+        Console.WriteLine("============Songs===========");
         Console.WriteLine("Listen to a Song:    listen");
+        Console.WriteLine("Last Month's top 50: popular");
         Console.WriteLine("Show this Menu:      help");
         Console.WriteLine("Back to Home:        back");
     }
@@ -42,6 +43,10 @@ class Songs
                 // listen to a song
                 case "listen":
                     ListenInput(database);
+                    break;
+                
+                case "popular":
+                    ListTopFifty(database);
                     break;
                 
                 // show help menu
@@ -69,6 +74,47 @@ class Songs
 
         reader.Close();
         return songs;
+    }
+
+    /// <summary>
+    /// List the top 50 played songs in the past 3 days
+    /// </summary>
+    /// <param name="database">db to query</param>
+    private static void ListTopFifty(NpgsqlConnection database)
+    {
+        // Get the top 50 most played songs in the last 30 days
+        var cmd = new NpgsqlCommand(
+            "SELECT title, count(timestamp) FROM ( SELECT songid, timestamp FROM listen WHERE listen.timestamp > now() - interval '30 day' group by songid, timestamp ) as topSongsPast30Days INNER JOIN ( SELECT songid, title FROM song ) as songNames ON topSongsPast30Days.songid = songNames.songid GROUP BY title ORDER BY count(timestamp) desc LIMIT 50;",
+            database
+            );
+        var reader = cmd.ExecuteReader();
+        
+        // Formatting temp vars
+        var songCount = 1;
+        var longestLine = 0;
+        var songTitles = new List<string>();
+        var songPlays = new List<string>();
+        // Read from the db into tmp vars
+        while (reader.Read())
+        {
+            var line = $"Song {songCount++}: {(string) reader["title"]}\t";
+
+            // update longest line length if needed
+            if (line.Length > longestLine) longestLine = line.Length;
+
+            songTitles.Add(line);
+            songPlays.Add($"| {(long) reader["count"]} Play" + ((long) reader["count"] == 1 ? "" : "s"));
+        }
+        reader.Close();
+        
+        // Pretty print all songs and times played
+        const string banner = "-= Top 50 Songs in the Past 30 Days =-";
+        Console.WriteLine($"{Util.Tabs((longestLine - banner.Length) / 8)}{banner}");
+        for (var i = 0; i < songTitles.Count; i++)
+        {
+            var line = songTitles[i];
+            Console.WriteLine($"{line}{Util.Tabs((longestLine - line.Length) / 8)}{songPlays[i]}");
+        }
     }
 
     public static string FormatSong(NpgsqlConnection database, Song song)
@@ -119,11 +165,10 @@ class Songs
     public static Song? SelectSong(NpgsqlConnection database)
     {
         Song? song = null;
-        Console.WriteLine("Enter song name:");
 
         while (song == null)
         {
-            var title = Console.ReadLine();
+            var title = Util.GetInput("Enter song name: ");
             if (title == "back") return null;
             song = QuerySong(database, title);
 
@@ -140,7 +185,7 @@ class Songs
     {
         foreach (var song in songs)
         {
-            Console.WriteLine($"    {Songs.FormatSong(database, song)}");
+            Console.WriteLine($"\t{FormatSong(database, song)}");
         }
     }
 

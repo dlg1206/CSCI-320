@@ -27,16 +27,16 @@
 **The application provides an user profile functionality that displays the following information:**
 - [X] The number of collections the user has
 
-- [ ] The number of followers
+- [X] The number of followers
 
-- [ ] The number of following
+- [X] The number of following
 
-- [ ] Their top 10 artists (by most plays, additions to collections, or combination)
+- [X] Their top 10 artists (by most plays, additions to collections, or combination)
   
 **The application must provide a song recommendation system with the following options:**
-- [ ] The top 50 most popular songs in the last 30 days (rolling)
+- [X] The top 50 most popular songs in the last 30 days (rolling)
 
-- [ ] The top 50 most popular songs among my friends
+- [X] The top 50 most popular songs among my friends
 
 - [ ] The top 5 most popular genres of the month (calendar month)
 
@@ -52,10 +52,10 @@ The [report](https://www.overleaf.com/3721374731njmxsbfqtjgb) will be updated to
 
 - [ ] containing an appendix listing all of the SQL statements used in this phase
 
-**Poster**
-- [ ] your team name
+**[Poster](https://docs.google.com/presentation/d/17bgQ1haruhtRolHtjDmnebT8UTFJkmFl9M_u5jTmN50/edit?usp=sharing)**
+- [X] your team name
 
-- [ ] the names of all team members
+- [X] the names of all team members
 
 - [ ] the observations from the data analytics
 
@@ -82,3 +82,18 @@ DB_USER=<RIT ID>
 DB_PASS=<RIT PW>
 ```
 Then do `dotnet run`
+
+# Dev command preset files
+To run with preset command files, use the `-dev` flag like so:
+
+`dotnet run -dev <cmdFile1> <cmdFile2> ... <cmdFileN>`
+
+With each `cmdFile` containing a list of db commands on each line.
+Example:
+```
+login
+foobar
+foobar
+```
+will execute `login` command with `foobar` as the username and password.
+The special `$PROMPT` keyword can be used to ask for user input, then continue with the cmdFile

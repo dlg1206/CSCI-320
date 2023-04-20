@@ -7,6 +7,23 @@ public class DBTest
     private static readonly string _logoFile = "src/logo";
     public static void Main(string[] args)
     {
+
+        try
+        {
+            if (args[0].Equals("-dev"))
+            {
+                Console.WriteLine("Command File detected");
+                var cmdFiles = new List<string>(args);
+                cmdFiles.RemoveAt(0);   // remove '-dev' flag
+                Util.InitPresetCommands(cmdFiles);
+            }
+        }
+        catch (Exception e)
+        {
+            // ignored
+        }
+
+
         Env.Load();
         string username = DotNetEnv.Env.GetString("DB_USER");
         string password = DotNetEnv.Env.GetString("DB_PASS");
