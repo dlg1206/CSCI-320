@@ -5,7 +5,7 @@ class Rankings
     public static void ListTopFiveGenres(NpgsqlConnection database)
     {
         var cmd = new NpgsqlCommand(
-                $"SELECT g.* FROM genre as g join songgenre as sg on g.genreid = sg.genreid join listen as l on sg.songid = l.songid GROUP BY g.genreid ORDER BY count(l.timestamp) desc limit 5",
+                $" SELECT g.* FROM genre as g join songgenre as sg on g.genreid = sg.genreid join listen as l on sg.songid = l.songid WHERE l.timestamp >= now() - interval '1 month' GROUP BY g.genreid ORDER BY count(l.timestamp) desc limit 5",
                 database
         );
         var reader = cmd.ExecuteReader();
