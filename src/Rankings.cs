@@ -47,8 +47,8 @@ SELECT songid, coalesce(gscore, 0) + coalesce(ascore, 0) + coalesce(suscore, 0) 
         ) as lc natural join artistsong ORDER BY times desc
     ) as sc GROUP BY songid ORDER BY ascore desc
 ) as ai natural full join (
-    SELECT songid, sum(uscore)/100 as suscore FROM (
-        SELECT songid, userid FROM listen WHERE userid != {uid}
+    SELECT songid, round(sum(uscore)/30) as suscore FROM (
+        SELECT songid, userid FROM listen WHERE not exists(SELECT * from listen as l where l.songid = listen.songid and userid = {uid})
     ) as su natural join (
         SELECT userid, count(songid) as uscore FROM (
             SELECT s.songid, count(*) as times FROM listen as l natural join song s WHERE l.userid = {uid} GROUP BY s.songid
