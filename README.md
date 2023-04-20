@@ -38,7 +38,7 @@
 
 - [X] The top 50 most popular songs among my friends
 
-- [ ] The top 5 most popular genres of the month (calendar month)
+- [X] The top 5 most popular genres of the month (calendar month)
 
 - [x] For you: Recommend songs to listen to based on your play history (e.g. genre, artist) and the play history of similar users
 
