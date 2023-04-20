@@ -21,11 +21,13 @@ class Songs
         return new SongIDs((int)reader["songid"]);
     }
     
-    private static void PrinSongCommands()
+    private static void PrintSongCommands()
     {
         Console.WriteLine("============Songs===========");
         Console.WriteLine("Listen to a Song:    listen");
         Console.WriteLine("Last Month's top 50: popular");
+        Console.WriteLine("Top 5 Genres:        genres");
+        Console.WriteLine("For You:             recommended");
         Console.WriteLine("Show this Menu:      help");
         Console.WriteLine("Back to Home:        back");
     }
@@ -33,7 +35,7 @@ class Songs
 
     public static void HandleInput(NpgsqlConnection database)
     {
-        PrinSongCommands();
+        PrintSongCommands();
         for (;;)
         {
             var input = Util.GetInput(Util.GetServerPrompt("/songs"));
@@ -48,10 +50,16 @@ class Songs
                 case "popular":
                     ListTopFifty(database);
                     break;
+                case "genres":
+                    Rankings.ListTopFiveGenres(database);
+                    break;
+                case "recommended":
+                    Rankings.ForYou(database);
+                    break;
                 
                 // show help menu
                 case "help":
-                    PrinSongCommands();
+                    PrintSongCommands();
                     break;
                 
                 // return home
