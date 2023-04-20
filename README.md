@@ -40,7 +40,7 @@
 
 - [ ] The top 5 most popular genres of the month (calendar month)
 
-- [ ] For you: Recommend songs to listen to based on your play history (e.g. genre, artist) and the play history of similar users
+- [x] For you: Recommend songs to listen to based on your play history (e.g. genre, artist) and the play history of similar users
 
 ### Non-Functional Requirements
 **Report**

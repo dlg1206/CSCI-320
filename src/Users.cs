@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Data;
 using Npgsql;
-using NpgsqlTypes;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
 
