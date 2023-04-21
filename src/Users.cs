@@ -1,7 +1,9 @@
 using System.Data;
+using System.Security.Cryptography;
 using System.Text;
 using Npgsql;
 using SshNet.Security.Cryptography;
+using SHA256 = System.Security.Cryptography.SHA256;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
 
