@@ -1,0 +1,103 @@
+SELECT * FROM album WHERE name='{title}'
+SELECT songid FROM songalbum WHERE albumid={albumid}
+SELECT a.* FROM album a join songalbum s on a.albumid=s.albumid WHERE s.songid={songid}
+SELECT * FROM album WHERE albumname = {albumName}
+SELECT * FROM album WHERE albumid IN (SELECT albumid FROM songalbum WHERE songid = {songId})
+UPDATE song SET timeslistened = timeslistened + 1 WHERE songid IN (SELECT songid FROM songalbum WHERE albumid = {album.albumid})
+SELECT a.* FROM artistsong s join artist a on s.artistid=a.artistid WHERE s.songid={songid}
+SELECT * FROM artist WHERE artistId={artistId}
+SELECT count(timestamp) FROM listen WHERE userid={Users.LoggedInUser.userid} AND songid={songid}
+INSERT INTO playlist(userid, creationdate, playlistname) VALUES ($1, $2, $3)
+UPDATE playlist SET playlistname = '{newPlaylistName}' WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}
+DELETE FROM songplaylist WHERE playlistid = {playlistId}
+DELETE FROM playlist WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}
+SELECT playlistid FROM playlist WHERE playlistname='{playlistName}' AND userid={Users.LoggedInUser!.userid}
+SELECT * FROM playlist WHERE userid={userid} ORDER BY playlistname ASC
+SELECT songid FROM songplaylist WHERE playlistid={playlistid}
+SELECT SUM(length), COUNT(*) FROM (SELECT * FROM song, songplaylist WHERE playlistid = {playlistId} AND song.songid = songplaylist.songid) as songs
+INSERT INTO songplaylist(songid, playlistid) VALUES ({song.songid}, {playlistid})
+DELETE FROM songplaylist WHERE playlistid={playlistid} AND songid={song.songid}
+INSERT INTO songplaylist(songid, playlistid) VALUES {values}
+INSERT INTO playlist(userid, creationdate, playlistname) VALUES ($1, $2, $3)
+UPDATE playlist SET playlistname = '{newPlaylistName}' WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}
+DELETE FROM songplaylist WHERE playlistid = {playlistId}
+DELETE FROM playlist WHERE playlistname = '{playlistName}' AND userid = {Users.LoggedInUser!.userid}
+SELECT playlistid FROM playlist WHERE playlistname='{playlistName}' AND userid={Users.LoggedInUser!.userid}
+SELECT * FROM playlist WHERE userid={userid} ORDER BY playlistname ASC
+SELECT songid FROM songplaylist WHERE playlistid={playlistid}
+SELECT SUM(length), COUNT(*) FROM (SELECT * FROM song, songplaylist WHERE playlistid = {playlistId} AND song.songid = songplaylist.songid) as songs
+INSERT INTO songplaylist(songid, playlistid) VALUES ({song.songid}, {playlistid})
+DELETE FROM songplaylist WHERE playlistid={playlistid} AND songid={song.songid}
+INSERT INTO songplaylist(songid, playlistid) VALUES {values}
+SELECT g.* FROM genre as g join songgenre as sg on g.genreid = sg.genreid join listen as l on sg.songid = l.songid WHERE l.timestamp >= now() - interval '1 month' GROUP BY g.genreid ORDER BY count(l.timestamp) desc limit 5
+SELECT title FROM song WHERE UPPER(title) LIKE UPPER('%{title}%')
+SELECT artistid FROM artist WHERE UPPER(name) LIKE UPPER('%{name}%')
+SELECT albumid FROM album WHERE UPPER(name) LIKE UPPER('%{name}%')
+SELECT genreid FROM genre WHERE UPPER(name) LIKE UPPER('%{name}%')
+SELECT * FROM song
+SELECT title, count(timestamp) FROM ( SELECT songid, timestamp FROM listen WHERE listen.timestamp > now() - interval '30 day' group by songid, timestamp ) as topSongsPast30Days INNER JOIN ( SELECT songid, title FROM song ) as songNames ON topSongsPast30Days.songid = songNames.songid GROUP BY title ORDER BY count(timestamp) desc LIMIT 50;
+SELECT * FROM song WHERE songid in ({string.Join(",", ids)})
+SELECT * FROM song WHERE title='{songTitle}'
+UPDATE song SET timeslistened = timeslistened + 1 WHERE title = '{song.title}'
+UPDATE listen SET count = count + 1 WHERE userid = {Users.LoggedInUser.userid} AND songid = {song.songid}
+INSERT INTO listen(userid, songid, count) VALUES({Users.LoggedInUser.userid}, {song.songid}, 1)
+SELECT artistid FROM ( SELECT songid, timestamp FROM listen WHERE userid={LoggedInUser!.userid} ) as userSongs INNER JOIN artistsong ON userSongs.songid = artistsong.songid GROUP BY artistid, artistsong.songid ORDER BY count(timestamp) desc LIMIT 10;
+SELECT * FROM \"user\" WHERE userId={userId}
+SELECT * FROM \"user\" WHERE username LIKE '{username}'
+SELECT * FROM friend WHERE userid2={LoggedInUser!.userid}
+SELECT * FROM friend WHERE userid1={LoggedInUser!.userid}
+SELECT title, count(timestamp) FROM ( SELECT songid, timestamp FROM listen WHERE userid IN({userIds}) group by songid, timestamp ) as topUserSongs INNER JOIN ( SELECT songid, title FROM song ) as songNames ON topUserSongs.songid = songNames.songid GROUP BY title ORDER BY count(timestamp) desc LIMIT 50;
+INSERT INTO friend(userid1, userid2) VALUES({LoggedInUser?.userid}, {friend.userid})
+DELETE FROM friend WHERE (userid1 = {friend.userid} AND userid2 = {LoggedInUser.userid}) OR (userid1 = {LoggedInUser.userid} AND userid2 = {friend.userid})
+SELECT * FROM \"user\" WHERE username LIKE '{username}'
+UPDATE \"user\" SET lastaccessed = ($1) WHERE username = '{username}'
+INSERT INTO \"user\"(email, username, firstname, lastname, dob, creationdate, lastaccessed, password) VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+SELECT * FROM \"user\" WHERE username LIKE '{username}'
+
+
+
+-- the joins, wheres, and order bys are all added in as needed in the code based on filters chosen
+SELECT s.* FROM (
+    SELECT s.* from song s
+        join artistsong ars on s.songid=ars.songid join artist ar on ars.artistid=ar.artistid,
+        join songalbum sa on s.songid=sa.songid join album al on sa.albumid=al.albumid,
+        join songgenre sg on s.songid=sg.songid join genre g on sg.genreid=g.genreid
+     WHERE
+        UPPER(s.title) LIKE UPPER('%{title}%') and
+        UPPER(ar.name) LIKE UPPER('%{artist}%') and
+        UPPER(al.name) LIKE UPPER('%{album}%') and
+        UPPER(g.name) LIKE UPPER('%{genre}%')
+     ORDER BY {string.Join(", ", orders)}
+         ar.name asc/desc
+         s.releasedate asc/desc
+         g.name asc/desc
+         s.title asc/desc
+) as s limit {limit}
+
+
+
+SELECT songid, coalesce(gscore, 0) + coalesce(ascore, 0) + coalesce(suscore, 0) as score FROM (
+    SELECT songid, sum(times) as gscore from (
+        SELECT songid from song WHERE not exists(SELECT * FROM listen WHERE userid = {uid} and songid = song.songid)
+    ) as s natural join songgenre natural join (
+        SELECT genreid, times FROM (
+            SELECT s.songid, count(*) as times FROM listen as l natural join song s WHERE l.userid = {uid} GROUP BY s.songid
+        ) as lc natural join songgenre ORDER BY times desc
+    ) as sc GROUP BY songid ORDER BY gscore desc
+) as gi natural full join (
+    SELECT songid, sum(times) as ascore from (
+        SELECT songid from song WHERE not exists(SELECT * FROM listen WHERE userid = {uid} and songid = song.songid)
+    ) as s natural join artistsong natural join (
+        SELECT artistid, times FROM (
+            SELECT s.songid, count(*) as times FROM listen as l natural join song s WHERE l.userid = {uid} GROUP BY s.songid
+        ) as lc natural join artistsong ORDER BY times desc
+    ) as sc GROUP BY songid ORDER BY ascore desc
+) as ai natural full join (
+    SELECT songid, round(sum(uscore)/30) as suscore FROM (
+        SELECT songid, userid FROM listen WHERE not exists(SELECT * from listen as l where l.songid = listen.songid and userid = {uid})
+    ) as su natural join (
+        SELECT userid, count(songid) as uscore FROM (
+            SELECT s.songid, count(*) as times FROM listen as l natural join song s WHERE l.userid = {uid} GROUP BY s.songid
+        ) as lc natural join listen WHERE userid != {uid} GROUP BY userid, songid ORDER BY count(timestamp) desc
+    ) as uc GROUP BY songid ORDER BY suscore desc
+) as ui ORDER BY score desc LIMIT 20

@@ -24,12 +24,12 @@ class Songs
     private static void PrintSongCommands()
     {
         Console.WriteLine("============Songs===========");
-        Console.WriteLine("Listen to a Song:    listen");
-        Console.WriteLine("Last Month's top 50: popular");
-        Console.WriteLine("Top 5 Genres:        genres");
-        Console.WriteLine("For You:             recommended");
-        Console.WriteLine("Show this Menu:      help");
-        Console.WriteLine("Back to Home:        back");
+        Console.WriteLine("Listen to a Song:     listen");
+        Console.WriteLine("Last Month's top 50:  popular");
+        Console.WriteLine("Month's Top 5 Genres: genres");
+        Console.WriteLine("For You:              recommended");
+        Console.WriteLine("Show this Menu:       help");
+        Console.WriteLine("Back to Home:         back");
     }
 
 

@@ -15,8 +15,6 @@ class Search
         return new SearchArtist((int)reader["artistid"]);
     }
 
-    private const string BASE_QUERY = "SELECT * FROM song";
-
     public static void HandleInput(NpgsqlConnection database)
     {
         string? title = null;
