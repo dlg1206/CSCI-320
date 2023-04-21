@@ -1,5 +1,7 @@
 using System.Data;
+using System.Text;
 using Npgsql;
+using SshNet.Security.Cryptography;
 
 record User(int userid, string email, string username, string firstName, string lastName, DateTime dob, DateTime creationDate, DateTime lastAccessed, string password);
 
@@ -441,9 +443,10 @@ class Users
             // dob success
             break;
         }
-        var password = Util.GetInput("Password: ");
-        // todo salt immediately
-        
+        var password = toSaltedHash(
+            Util.GetInput("Password: "), 
+            username);
+
         // attempt to create user
         if (CreateUser(database, email, username, firstName, lastName, dob, password))
             return LogIn(database, username, password);     // attempt login on success
@@ -452,6 +455,35 @@ class Users
         Console.WriteLine($"[SERVER] | Failed to create user {username}");  
         return false;
         
+    }
+    
+    /// <summary>
+    /// Create a SHA256 hash of a given password using a SALT
+    /// </summary>
+    /// <param name="password">Password to salt and hash</param>
+    /// <param name="username">unique id to use for salt</param>
+    /// <returns>SHA256 string of salted password</returns>
+    private static string toSaltedHash(string password, string username)
+    {
+        // salt w/ username since unique
+        var salt = "thereisasus" + username + "amongus";
+        
+        // Semi randomly break apart password and insert a salt character
+        foreach (var c in salt)
+        {
+            var insertIndex = c % password.Length;
+            // Break into 2 sides
+            var left = password.Substring(0, insertIndex);
+            var right = password.Substring(insertIndex, password.Length - insertIndex);
+            
+            // update password
+            password = left + c + right;
+        }
+        // hash salted password
+        using var hash = SHA256.Create();
+        var byteArray = hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+        // return SHA256 string
+        return Convert.ToHexString(byteArray);
     }
 
     /// <summary>
