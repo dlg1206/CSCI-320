@@ -1,3 +1,5 @@
+⚠️ **This project follows an Academic Integrity Notice. See the [NOTICE](NOTICE) file for details.** ⚠️ 
+
 # Spotify2-ElectricBoogaloo
 
 ## Phase 2 Application Requirements
